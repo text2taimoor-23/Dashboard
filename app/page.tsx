@@ -526,6 +526,16 @@ export default function Home() {
           )}
         </div>
 
+        {/* Trade receivables by counterparty */}
+        <div className="mt-6">
+          <Panel
+            title="Mari Trade Receivables by Counterparty"
+            meta="From quarterly financial reports (FY2025-26)"
+          >
+            <ReceivablesByQuarter />
+          </Panel>
+        </div>
+
         {/* Detail panels */}
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Panel
@@ -661,14 +671,6 @@ export default function Home() {
                 </p>
               </div>
             )}
-          </Panel>
-
-          <Panel
-            title="Mari Trade Receivables by Counterparty"
-            meta="From quarterly financial reports (FY2025-26)"
-            className="lg:col-span-2"
-          >
-            <ReceivablesByQuarter />
           </Panel>
         </div>
       </main>
