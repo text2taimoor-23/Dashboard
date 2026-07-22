@@ -62,6 +62,16 @@ const MARI_SHARE_POLL_INTERVAL_MS = 5 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
+// Trade debts (receivables) from the Statement of Financial Position in Mari Energies'
+// standalone quarterly reports, published on marienergies.com.pk/investors-relations/financial-reports.
+// Not scraped — updated by hand whenever a newer quarterly report is read.
+const TRADE_RECEIVABLES = [
+  { period: "Jun 30, 2025", label: "FY25 year-end", rsMillion: 86581.7 },
+  { period: "Sep 30, 2025", label: "Q1 FY25-26", rsMillion: 85897.6 },
+  { period: "Dec 31, 2025", label: "Q2 FY25-26", rsMillion: 88765.6 },
+  { period: "Mar 31, 2026", label: "Q3 FY25-26", rsMillion: 92051.8 },
+];
+
 function LiveBadge({ isLive }: { isLive: boolean }) {
   if (isLive) {
     return (
@@ -183,6 +193,57 @@ function GasComboTile({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function TradeReceivablesTable() {
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs font-semibold uppercase tracking-wide text-foreground/50">
+              <th className="pb-2">Period</th>
+              <th className="pb-2 text-right">Balance (Rs. mn)</th>
+              <th className="pb-2 text-right">QoQ Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {TRADE_RECEIVABLES.map((row, i) => {
+              const prev = TRADE_RECEIVABLES[i - 1];
+              const changePercent = prev ? ((row.rsMillion - prev.rsMillion) / prev.rsMillion) * 100 : null;
+              return (
+                <tr key={row.period} className="border-t border-mari-gray-light/60">
+                  <td className="py-2">
+                    <div className="font-medium text-mari-navy">{row.period}</div>
+                    <div className="text-xs text-foreground/50">{row.label}</div>
+                  </td>
+                  <td className="py-2 text-right font-semibold text-mari-navy">
+                    {row.rsMillion.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  </td>
+                  <td
+                    className={`py-2 text-right font-medium ${
+                      changePercent === null
+                        ? "text-foreground/50"
+                        : changePercent > 0
+                          ? "text-status-critical"
+                          : "text-status-good"
+                    }`}
+                  >
+                    {changePercent === null ? "—" : `${changePercent > 0 ? "+" : ""}${changePercent.toFixed(1)}%`}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-foreground/50">
+        Standalone trade debts from the Statement of Financial Position in each quarterly report. ~94% is due
+        from associated gas utilities (SNGPL/SSGC) rather than third-party trade risk — the buildup reflects the
+        sector-wide circular debt issue, not a collections problem specific to Mari.
+      </p>
     </div>
   );
 }
@@ -554,6 +615,10 @@ export default function Home() {
                 </p>
               </div>
             )}
+          </Panel>
+
+          <Panel title="Mari Trade Receivables" meta="From quarterly financial reports (FY2025-26)">
+            <TradeReceivablesTable />
           </Panel>
         </div>
       </main>
