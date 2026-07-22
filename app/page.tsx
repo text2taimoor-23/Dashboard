@@ -101,6 +101,66 @@ function fmtMn(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
+// Pakistan petroleum import volumes, read directly from OCAC's own Import/Export report
+// (ocac.org.pk/oil-industry-statistics) — the only primary source with real monthly tonnage,
+// though it lags by roughly a month and has no fixed/predictable URL. Not scraped — updated by
+// hand whenever a newer month's row is published and read. LNG import volume and both oil/LNG
+// live prices are not yet wired up (LNG volume has no structured source; prices need an
+// OilPriceAPI key).
+const OIL_IMPORTS_LAST_MONTH = {
+  periodLabel: "May 2026",
+  totalKt: 1198.1,
+  crudeKt: 774.6,
+  source: "OCAC",
+};
+
+function fmtKt(n: number) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function OilImportsTile({
+  periodLabel,
+  totalKt,
+  crudeKt,
+  source,
+}: {
+  periodLabel: string;
+  totalKt: number;
+  crudeKt: number;
+  source: string;
+}) {
+  return (
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        Pakistan Oil Imports
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {periodLabel}</span>
+      </div>
+      <div className="mt-2 flex items-end gap-4">
+        <div>
+          <div className="text-2xl font-semibold text-mari-green">
+            {fmtKt(totalKt)}
+            <span className="ml-1 text-sm font-normal text-foreground/50">kt</span>
+          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+            Total Petroleum
+          </div>
+        </div>
+        <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />
+        <div>
+          <div className="text-2xl font-semibold text-mari-blue">
+            {fmtKt(crudeKt)}
+            <span className="ml-1 text-sm font-normal text-foreground/50">kt</span>
+          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">Crude Oil</div>
+        </div>
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: {source} &middot; latest month with published data (~1 month lag)
+      </div>
+    </div>
+  );
+}
+
 function LiveBadge({ isLive }: { isLive: boolean }) {
   if (isLive) {
     return (
@@ -525,6 +585,11 @@ export default function Home() {
             />
           )}
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
+        </div>
+
+        {/* Oil & LNG strip — LNG import volume and oil/LNG live prices pending (see note above OIL_IMPORTS_LAST_MONTH) */}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
         </div>
 
         {/* Trade receivables by counterparty */}
