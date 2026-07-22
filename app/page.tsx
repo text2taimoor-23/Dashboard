@@ -62,15 +62,44 @@ const MARI_SHARE_POLL_INTERVAL_MS = 5 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
-// Trade debts (receivables) from the Statement of Financial Position in Mari Energies'
-// standalone quarterly reports, published on marienergies.com.pk/investors-relations/financial-reports.
-// Not scraped — updated by hand whenever a newer quarterly report is read.
-const TRADE_RECEIVABLES = [
-  { period: "Jun 30, 2025", label: "FY25 year-end", rsMillion: 86581.7 },
-  { period: "Sep 30, 2025", label: "Q1 FY25-26", rsMillion: 85897.6 },
-  { period: "Dec 31, 2025", label: "Q2 FY25-26", rsMillion: 88765.6 },
-  { period: "Mar 31, 2026", label: "Q3 FY25-26", rsMillion: 92051.8 },
+// Trade debts (receivables) broken down by counterparty, from the "Transactions and balances
+// with related parties" note in Mari Energies' standalone quarterly reports (marienergies.com.pk/
+// investors-relations/financial-reports). Refineries = Pak Arab Refinery + Pakistan Refinery;
+// Others = Fauji Fertilizer + Foundation Power + Foundation Gas + Central Power Generation +
+// non-related-party "due from others". Not scraped — updated by hand each quarter.
+const RECEIVABLES_BY_QUARTER = [
+  {
+    quarter: "Q1 FY25-26",
+    period: "Sep 30, 2025",
+    sngpl: 69067.0,
+    ssgcl: 9435.2,
+    refineries: 430.8,
+    others: 6964.5,
+    total: 85897.6,
+  },
+  {
+    quarter: "Q2 FY25-26",
+    period: "Dec 31, 2025",
+    sngpl: 71655.3,
+    ssgcl: 9343.9,
+    refineries: 595.2,
+    others: 7171.2,
+    total: 88765.6,
+  },
+  {
+    quarter: "Q3 FY25-26",
+    period: "Mar 31, 2026",
+    sngpl: 73443.6,
+    ssgcl: 10509.7,
+    refineries: 422.3,
+    others: 7676.2,
+    total: 92051.8,
+  },
 ];
+
+function fmtMn(n: number) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
 
 function LiveBadge({ isLive }: { isLive: boolean }) {
   if (isLive) {
@@ -197,52 +226,67 @@ function GasComboTile({
   );
 }
 
-function TradeReceivablesTable() {
+function QuarterReceivablesTile({
+  quarter,
+  period,
+  sngpl,
+  ssgcl,
+  refineries,
+  others,
+  total,
+}: {
+  quarter: string;
+  period: string;
+  sngpl: number;
+  ssgcl: number;
+  refineries: number;
+  others: number;
+  total: number;
+}) {
+  return (
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        {quarter}
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {period}</span>
+      </div>
+      <div className="mt-2 space-y-1 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">SNGPL</span>
+          <span className="font-medium text-mari-navy">{fmtMn(sngpl)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">SSGCL</span>
+          <span className="font-medium text-mari-navy">{fmtMn(ssgcl)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Refineries</span>
+          <span className="font-medium text-mari-navy">{fmtMn(refineries)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Others</span>
+          <span className="font-medium text-mari-navy">{fmtMn(others)}</span>
+        </div>
+      </div>
+      <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-sm">
+        <span className="font-semibold text-foreground/70">Total</span>
+        <span className="font-semibold text-mari-green">{fmtMn(total)}</span>
+      </div>
+    </div>
+  );
+}
+
+function ReceivablesByQuarter() {
   return (
     <div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs font-semibold uppercase tracking-wide text-foreground/50">
-              <th className="pb-2">Period</th>
-              <th className="pb-2 text-right">Balance (Rs. mn)</th>
-              <th className="pb-2 text-right">QoQ Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {TRADE_RECEIVABLES.map((row, i) => {
-              const prev = TRADE_RECEIVABLES[i - 1];
-              const changePercent = prev ? ((row.rsMillion - prev.rsMillion) / prev.rsMillion) * 100 : null;
-              return (
-                <tr key={row.period} className="border-t border-mari-gray-light/60">
-                  <td className="py-2">
-                    <div className="font-medium text-mari-navy">{row.period}</div>
-                    <div className="text-xs text-foreground/50">{row.label}</div>
-                  </td>
-                  <td className="py-2 text-right font-semibold text-mari-navy">
-                    {row.rsMillion.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                  </td>
-                  <td
-                    className={`py-2 text-right font-medium ${
-                      changePercent === null
-                        ? "text-foreground/50"
-                        : changePercent > 0
-                          ? "text-status-critical"
-                          : "text-status-good"
-                    }`}
-                  >
-                    {changePercent === null ? "—" : `${changePercent > 0 ? "+" : ""}${changePercent.toFixed(1)}%`}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {RECEIVABLES_BY_QUARTER.map((q) => (
+          <QuarterReceivablesTile key={q.quarter} {...q} />
+        ))}
       </div>
       <p className="mt-3 text-xs text-foreground/50">
-        Standalone trade debts from the Statement of Financial Position in each quarterly report. ~94% is due
-        from associated gas utilities (SNGPL/SSGC) rather than third-party trade risk — the buildup reflects the
-        sector-wide circular debt issue, not a collections problem specific to Mari.
+        Standalone trade debts (Rs. mn) by counterparty, from the related-party balances note in each quarterly
+        report. SNGPL &amp; SSGCL make up ~90% of the balance — this is sector-wide circular debt, not a
+        collections problem specific to Mari.
       </p>
     </div>
   );
@@ -261,14 +305,16 @@ function Panel({
   badge,
   meta,
   children,
+  className,
 }: {
   title: string;
   badge?: React.ReactNode;
   meta?: string | null;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex flex-col rounded-lg border border-mari-gray-light/60 bg-white p-6 shadow-sm">
+    <div className={`flex flex-col rounded-lg border border-mari-gray-light/60 bg-white p-6 shadow-sm ${className ?? ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold tracking-tight text-mari-navy">{title}</h2>
         {badge}
@@ -617,8 +663,12 @@ export default function Home() {
             )}
           </Panel>
 
-          <Panel title="Mari Trade Receivables" meta="From quarterly financial reports (FY2025-26)">
-            <TradeReceivablesTable />
+          <Panel
+            title="Mari Trade Receivables by Counterparty"
+            meta="From quarterly financial reports (FY2025-26)"
+            className="lg:col-span-2"
+          >
+            <ReceivablesByQuarter />
           </Panel>
         </div>
       </main>
