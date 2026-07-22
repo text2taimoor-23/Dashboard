@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bdc-oil-prices-dev",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js", "run", "dev"],
+      "env": { "PATH": "C:\\Program Files\\nodejs;C:\\Windows\\System32;C:\\Windows" },
+      "port": 3000
+    }
+  ]
+}
