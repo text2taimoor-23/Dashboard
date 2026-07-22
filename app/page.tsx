@@ -508,7 +508,7 @@ export default function Home() {
         </div>
 
         {/* KPI strip */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <FuelComboTile petrol={petrol} hsd={hsd} />
           <GasComboTile
             benchmark={lastVerifiedGas?.benchmark}
@@ -524,6 +524,7 @@ export default function Home() {
               direction={mariShare.direction}
             />
           )}
+          <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
         </div>
 
         {/* Trade receivables by counterparty */}
