@@ -6,11 +6,12 @@ const OGRA_WELLHEAD_PAGE = "https://www.ogra.org.pk/well-head-gas-prices";
 // gazette PDFs is unreliable for pricing data, so these are only updated by manually reading
 // a newly published notification, not scraped automatically).
 const LAST_VERIFIED_MARI_PRICE = {
-  period: "January 01, 2025 to June 30, 2025",
+  period: "January 01, 2026 to June 30, 2026",
+  periodShort: "Jan - Jun 2026",
   reservoir: "Mari HRL & Mari Deep (Goru-B)",
-  benchmark: { value: 518.0196, currency: "PKR", unit: "MMBTU" },
-  incremental: { value: 5.5565, currency: "USD", unit: "MMBTU" },
-  reference: "OGRA-Fin-28-9(85)/2015 dated Feb 24, 2025",
+  benchmark: { value: 490.3733, currency: "PKR", unit: "MMBTU" },
+  incremental: { value: 5.3724, currency: "USD", unit: "MMBTU" },
+  reference: "OGRA-Fin-28-9(85)/2015 dated Mar 30, 2026",
 };
 
 function extractLatestMariNotification(html: string) {

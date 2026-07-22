@@ -42,6 +42,7 @@ type MariPriceFigure = {
 type MariApiResponse = {
   lastVerified?: {
     period: string;
+    periodShort: string;
     reservoir: string;
     benchmark: MariPriceFigure;
     incremental: MariPriceFigure;
@@ -101,6 +102,88 @@ function StatusPill({ status, label }: { status: "good" | "warning" | "critical"
       <span className={`h-2 w-2 rounded-full ${dot[status]}`} />
       {label}
     </span>
+  );
+}
+
+function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint }) {
+  if (!petrol && !hsd) return null;
+  const unit = petrol?.unit ?? hsd?.unit;
+  const currency = petrol?.currency ?? hsd?.currency;
+
+  return (
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        Petrol &amp; HSD
+        {currency && unit && (
+          <span className="ml-1 font-normal normal-case text-foreground/40">
+            &middot; {currency}/{unit}
+          </span>
+        )}
+      </div>
+      <div className="mt-2 flex items-end gap-4">
+        {petrol && (
+          <div>
+            <div className="text-2xl font-semibold text-mari-green">{petrol.price.toFixed(2)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">Petrol</div>
+          </div>
+        )}
+        {petrol && hsd && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
+        {hsd && (
+          <div>
+            <div className="text-2xl font-semibold text-mari-blue">{hsd.price.toFixed(2)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">HSD</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GasComboTile({
+  benchmark,
+  incremental,
+  periodShort,
+}: {
+  benchmark?: MariPriceFigure;
+  incremental?: MariPriceFigure;
+  periodShort?: string;
+}) {
+  if (!benchmark && !incremental) return null;
+
+  return (
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        Gas Benchmark &amp; Incremental
+        {periodShort && (
+          <span className="ml-1 font-normal normal-case text-foreground/40">({periodShort})</span>
+        )}
+      </div>
+      <div className="mt-2 flex items-end gap-4">
+        {benchmark && (
+          <div>
+            <div className="text-2xl font-semibold text-mari-green">
+              {benchmark.value.toFixed(2)}
+              <span className="ml-1 text-sm font-normal text-foreground/50">{benchmark.currency}</span>
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+              Benchmark &middot; /{benchmark.unit}
+            </div>
+          </div>
+        )}
+        {benchmark && incremental && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
+        {incremental && (
+          <div>
+            <div className="text-2xl font-semibold text-mari-blue">
+              {incremental.value.toFixed(4)}
+              <span className="ml-1 text-sm font-normal text-foreground/50">{incremental.currency}</span>
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+              Incremental &middot; /{incremental.unit}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -318,9 +401,13 @@ export default function Home() {
         </div>
 
         {/* KPI strip */}
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {petrol && <StatTile label="Petrol" value={`${petrol.currency} ${petrol.price.toFixed(2)}`} unit={`/${petrol.unit}`} />}
-          {hsd && <StatTile label="HSD" value={`${hsd.currency} ${hsd.price.toFixed(2)}`} unit={`/${hsd.unit}`} />}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <FuelComboTile petrol={petrol} hsd={hsd} />
+          <GasComboTile
+            benchmark={lastVerifiedGas?.benchmark}
+            incremental={lastVerifiedGas?.incremental}
+            periodShort={lastVerifiedGas?.periodShort}
+          />
           {typeof mariShare?.price === "number" && (
             <StatTile
               label="MARI Share (PSX)"
@@ -328,20 +415,6 @@ export default function Home() {
               delta={mariShare.change}
               deltaPercent={mariShare.changePercent}
               direction={mariShare.direction}
-            />
-          )}
-          {lastVerifiedGas && (
-            <StatTile
-              label="Gas Benchmark"
-              value={`${lastVerifiedGas.benchmark.currency} ${lastVerifiedGas.benchmark.value.toFixed(2)}`}
-              unit={`/${lastVerifiedGas.benchmark.unit}`}
-            />
-          )}
-          {lastVerifiedGas && (
-            <StatTile
-              label="Gas Incremental"
-              value={`${lastVerifiedGas.incremental.currency} ${lastVerifiedGas.incremental.value.toFixed(4)}`}
-              unit={`/${lastVerifiedGas.incremental.unit}`}
             />
           )}
         </div>
@@ -421,8 +494,8 @@ export default function Home() {
           </Panel>
 
           <Panel
-            title="Mari Wellhead Gas Price"
-            meta={lastVerifiedGas ? `${lastVerifiedGas.period} · ${lastVerifiedGas.reservoir}` : undefined}
+            title={`Mari Field Prices${lastVerifiedGas ? ` (${lastVerifiedGas.periodShort})` : ""}`}
+            meta={lastVerifiedGas ? lastVerifiedGas.reservoir : undefined}
           >
             {mariError && <ErrorNote message={mariError} />}
             {lastVerifiedGas && (
