@@ -56,9 +56,28 @@ type MariApiResponse = {
   error?: string;
 };
 
+type CommodityPrice = {
+  code: string;
+  price: number;
+  currency: string;
+  unit: string;
+  changePercent24h: number | null;
+  previousPrice24h: number | null;
+  asOf: string;
+};
+
+type CommodityApiResponse = {
+  oil?: CommodityPrice;
+  lng?: CommodityPrice;
+  error?: string | null;
+  fetchedAt?: string;
+  source?: string;
+};
+
 const POLL_INTERVAL_MS = 5 * 60_000;
 const MARI_POLL_INTERVAL_MS = 30 * 60_000;
 const MARI_SHARE_POLL_INTERVAL_MS = 5 * 60_000;
+const COMMODITY_POLL_INTERVAL_MS = 30 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
@@ -443,6 +462,8 @@ export default function Home() {
   const [mariError, setMariError] = useState<string | null>(null);
   const [mariShare, setMariShare] = useState<MariShareApiResponse | null>(null);
   const [mariShareError, setMariShareError] = useState<string | null>(null);
+  const [commodities, setCommodities] = useState<CommodityApiResponse | null>(null);
+  const [commodityError, setCommodityError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
 
   useEffect(() => {
@@ -540,6 +561,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchCommodities() {
+      try {
+        const res = await fetch("/api/commodity-prices", { cache: "no-store" });
+        const data: CommodityApiResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setCommodityError(data.error ?? "Failed to fetch oil/LNG prices");
+          return;
+        }
+
+        setCommodityError(data.error ?? null);
+        setCommodities(data);
+      } catch {
+        if (!cancelled) setCommodityError("Network error while fetching oil/LNG prices");
+      }
+    }
+
+    fetchCommodities();
+    const interval = setInterval(fetchCommodities, COMMODITY_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const petrol = prices.find((p) => p.code === "PETROL");
   const hsd = prices.find((p) => p.code === "HSD");
   const lastVerifiedGas = mari?.lastVerified;
@@ -587,9 +638,60 @@ export default function Home() {
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
         </div>
 
-        {/* Oil & LNG strip — LNG import volume and oil/LNG live prices pending (see note above OIL_IMPORTS_LAST_MONTH) */}
+        {/* Oil & LNG strip — LNG import volume still pending (see note above OIL_IMPORTS_LAST_MONTH) */}
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
+          {commodities?.oil && (
+            <StatTile
+              label="Dubai Crude Oil"
+              value={`${commodities.oil.currency} ${commodities.oil.price.toFixed(2)}`}
+              unit={`/${commodities.oil.unit}`}
+              delta={
+                typeof commodities.oil.previousPrice24h === "number"
+                  ? commodities.oil.price - commodities.oil.previousPrice24h
+                  : undefined
+              }
+              deltaPercent={commodities.oil.changePercent24h}
+              direction={
+                commodities.oil.changePercent24h === null
+                  ? "flat"
+                  : commodities.oil.changePercent24h > 0
+                    ? "up"
+                    : commodities.oil.changePercent24h < 0
+                      ? "down"
+                      : "flat"
+              }
+              caption="24h change"
+            />
+          )}
+          {commodities?.lng && (
+            <StatTile
+              label="JKM LNG (Spot)"
+              value={`${commodities.lng.currency} ${commodities.lng.price.toFixed(2)}`}
+              unit={`/${commodities.lng.unit}`}
+              delta={
+                typeof commodities.lng.previousPrice24h === "number"
+                  ? commodities.lng.price - commodities.lng.previousPrice24h
+                  : undefined
+              }
+              deltaPercent={commodities.lng.changePercent24h}
+              direction={
+                commodities.lng.changePercent24h === null
+                  ? "flat"
+                  : commodities.lng.changePercent24h > 0
+                    ? "up"
+                    : commodities.lng.changePercent24h < 0
+                      ? "down"
+                      : "flat"
+              }
+              caption="24h change"
+            />
+          )}
+          {commodityError && !commodities?.oil && !commodities?.lng && (
+            <div className="sm:col-span-2 lg:col-span-2">
+              <ErrorNote message={commodityError} />
+            </div>
+          )}
         </div>
 
         {/* Trade receivables by counterparty */}
