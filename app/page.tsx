@@ -198,7 +198,16 @@ const IMF_PROGRAM = {
   rsfTrancheUsdBn: 0.22,
   totalDisbursedUsdBn: 4.8,
   totalFacilityUsdBn: 8.4,
-  nextReviewNote: "Not yet formally scheduled — reviews have landed roughly every 3-6 months; a 4th EFF review is plausible around Q4 2026",
+  // From the IMF Staff Report's "Table 8a/8b: Schedule of Reviews and Purchases" — these are
+  // *test dates* tied to performance-criteria data, not disbursement dates. The 3rd review's test
+  // date was Mar 15, 2026 but Board approval/actual disbursement didn't land until May 8, 2026 —
+  // a ~7-8 week lag. Applying that same lag, expect the actual 4th-review announcement around
+  // late Oct-Nov 2026, not exactly on the test date below.
+  nextReviewTestDate: "Sep 15, 2026",
+  nextReviewLabel: "4th EFF review + next RSF disbursement",
+  nextReviewEffUsdBn: 1.1,
+  nextReviewRsfUsdBn: 0.11,
+  nextReviewLagNote: "Test date, not disbursement date — expect actual Board approval ~7-8 weeks later (~late Oct-Nov 2026), based on the 3rd review's lag",
   circularDebtRsTn: 1.924,
   circularDebtBanksRsBn: 873,
   circularDebtAsOf: "end-May 2026",
@@ -233,8 +242,12 @@ function ImfComboTile() {
           </div>
         </div>
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
-        Source: IMF press releases &middot; updated per review, not a live feed
+      <div className="mt-2 text-[10px] text-foreground/50">
+        Next: &#8776;USD {(IMF_PROGRAM.nextReviewEffUsdBn + IMF_PROGRAM.nextReviewRsfUsdBn).toFixed(2)}bn &middot;
+        test date {IMF_PROGRAM.nextReviewTestDate}
+      </div>
+      <div className="mt-1 text-[10px] text-foreground/40">
+        Source: IMF Staff Report &middot; updated per review, not a live feed
       </div>
     </div>
   );
@@ -939,8 +952,17 @@ export default function Home() {
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-foreground/70">Next review</span>
-                <StatusPill status="warning" label="Not yet scheduled" />
+                <span className="text-foreground/70">Next review (test date)</span>
+                <span className="font-medium text-mari-navy">
+                  {IMF_PROGRAM.nextReviewLabel} &middot; {IMF_PROGRAM.nextReviewTestDate}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">Expected next tranche</span>
+                <span className="font-medium text-mari-navy">
+                  &#8776;USD {IMF_PROGRAM.nextReviewEffUsdBn.toFixed(1)}bn (EFF) + &#8776;USD{" "}
+                  {(IMF_PROGRAM.nextReviewRsfUsdBn * 1000).toFixed(0)}mn (RSF)
+                </span>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-foreground/70">Flagged risk (power-sector circular debt)</span>
@@ -948,7 +970,7 @@ export default function Home() {
                   Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(3)}tn ({IMF_PROGRAM.circularDebtAsOf}) — target missed
                 </span>
               </div>
-              <p className="pt-1 text-xs text-foreground/50">{IMF_PROGRAM.nextReviewNote}.</p>
+              <p className="pt-1 text-xs text-foreground/50">{IMF_PROGRAM.nextReviewLagNote}.</p>
               <p className="text-xs text-foreground/50">
                 The circular-debt figure above is the national power-sector version of the same
                 government/utility payment-delay problem behind Mari&apos;s own gas-sector receivables from
