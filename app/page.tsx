@@ -224,22 +224,31 @@ function ImfProgramTile() {
         Pakistan IMF Program
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
       </div>
-      <div className="mt-2 space-y-1 text-sm">
+      <div className="mt-2 space-y-1.5 text-sm">
         <div className="flex items-center justify-between">
-          <span className="text-foreground/60">Facility Size</span>
+          <span className="text-foreground/60">Facility</span>
           <span className="font-medium text-mari-navy">USD {IMF_PROGRAM.totalFacilityUsdBn.toFixed(1)}bn</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-foreground/60">Latest Tranche &middot; {IMF_PROGRAM.latestReviewDate}</span>
-          <span className="font-medium text-mari-navy">USD {latestTranche.toFixed(2)}bn</span>
+        <div className="flex items-baseline justify-between">
+          <span className="text-foreground/60">Latest Tranche</span>
+          <span className="text-right">
+            <span className="font-medium text-mari-navy">USD {latestTranche.toFixed(2)}bn</span>
+            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.latestReviewDate}</div>
+          </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-foreground/60">Next Tranche &middot; test {IMF_PROGRAM.nextReviewTestDate}</span>
-          <span className="font-medium text-mari-navy">&#8776;USD {nextTranche.toFixed(2)}bn</span>
+        <div className="flex items-baseline justify-between">
+          <span className="text-foreground/60">Next Tranche</span>
+          <span className="text-right">
+            <span className="font-medium text-mari-navy">&#8776;USD {nextTranche.toFixed(2)}bn</span>
+            <div className="text-[10px] text-foreground/40">test {IMF_PROGRAM.nextReviewTestDate}</div>
+          </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-foreground/60">Circular Debt Risk ({IMF_PROGRAM.circularDebtAsOf})</span>
-          <span className="font-medium text-status-critical">Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(2)}tn</span>
+        <div className="flex items-baseline justify-between">
+          <span className="text-foreground/60">Circular Debt</span>
+          <span className="text-right">
+            <span className="font-medium text-status-critical">Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(2)}tn</span>
+            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.circularDebtAsOf}</div>
+          </span>
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-sm">
