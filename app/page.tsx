@@ -213,40 +213,43 @@ const IMF_PROGRAM = {
   circularDebtAsOf: "end-May 2026",
 };
 
-function ImfComboTile() {
+function ImfProgramTile() {
   const latestTranche = IMF_PROGRAM.effTrancheUsdBn + IMF_PROGRAM.rsfTrancheUsdBn;
+  const nextTranche = IMF_PROGRAM.nextReviewEffUsdBn + IMF_PROGRAM.nextReviewRsfUsdBn;
+  const disbursedPercent = (IMF_PROGRAM.totalDisbursedUsdBn / IMF_PROGRAM.totalFacilityUsdBn) * 100;
+
   return (
-    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4">
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Pakistan IMF Program
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
       </div>
-      <div className="mt-2 flex items-end gap-4">
-        <div>
-          <div className="text-2xl font-semibold text-mari-green">
-            {IMF_PROGRAM.totalDisbursedUsdBn.toFixed(1)}
-            <span className="ml-1 text-sm font-normal text-foreground/50">USD bn</span>
-          </div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
-            Total Disbursed &middot; of {IMF_PROGRAM.totalFacilityUsdBn.toFixed(1)}bn
-          </div>
+      <div className="mt-2 space-y-1 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Facility Size</span>
+          <span className="font-medium text-mari-navy">USD {IMF_PROGRAM.totalFacilityUsdBn.toFixed(1)}bn</span>
         </div>
-        <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />
-        <div>
-          <div className="text-2xl font-semibold text-mari-blue">
-            {latestTranche.toFixed(2)}
-            <span className="ml-1 text-sm font-normal text-foreground/50">USD bn</span>
-          </div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
-            Latest Tranche &middot; {IMF_PROGRAM.latestReviewDate}
-          </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Latest Tranche &middot; {IMF_PROGRAM.latestReviewDate}</span>
+          <span className="font-medium text-mari-navy">USD {latestTranche.toFixed(2)}bn</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Next Tranche &middot; test {IMF_PROGRAM.nextReviewTestDate}</span>
+          <span className="font-medium text-mari-navy">&#8776;USD {nextTranche.toFixed(2)}bn</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Circular Debt Risk ({IMF_PROGRAM.circularDebtAsOf})</span>
+          <span className="font-medium text-status-critical">Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(2)}tn</span>
         </div>
       </div>
-      <div className="mt-2 text-[10px] text-foreground/50">
-        Next: &#8776;USD {(IMF_PROGRAM.nextReviewEffUsdBn + IMF_PROGRAM.nextReviewRsfUsdBn).toFixed(2)}bn &middot;
-        test date {IMF_PROGRAM.nextReviewTestDate}
+      <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-sm">
+        <span className="font-semibold text-foreground/70">Total Disbursed</span>
+        <span className="font-semibold text-mari-green">
+          USD {IMF_PROGRAM.totalDisbursedUsdBn.toFixed(1)}bn
+          <span className="ml-1 text-xs font-normal text-foreground/50">({disbursedPercent.toFixed(0)}%)</span>
+        </span>
       </div>
-      <div className="mt-1 text-[10px] text-foreground/40">
+      <div className="mt-2 text-[10px] text-foreground/40">
         Source: IMF Staff Report &middot; updated per review, not a live feed
       </div>
     </div>
@@ -765,7 +768,7 @@ export default function Home() {
               <ErrorNote message={commodityError} />
             </div>
           )}
-          <ImfComboTile />
+          <ImfProgramTile />
         </div>
 
         {/* Trade receivables by counterparty */}
