@@ -180,6 +180,66 @@ function OilImportsTile({
   );
 }
 
+// Pakistan's IMF EFF + RSF program status, read from IMF press releases (imf.org/en/countries/pak).
+// No live feed exists for this — IMF issues a press release every few months per review, so this is
+// updated by hand whenever a newer review is completed, same pattern as the Mari gas price. The
+// power-sector circular debt figure is the national-level version of the same payment-delay problem
+// behind Mari's own gas-sector receivables (see RECEIVABLES_BY_QUARTER).
+const IMF_PROGRAM = {
+  effTotalUsdBn: 7.0,
+  effMonths: 37,
+  effApproved: "Sep 25, 2024",
+  rsfTotalUsdBn: 1.4,
+  rsfMonths: 28,
+  rsfApproved: "May 9, 2025",
+  latestReviewLabel: "3rd EFF review + 2nd RSF review",
+  latestReviewDate: "May 8, 2026",
+  effTrancheUsdBn: 1.1,
+  rsfTrancheUsdBn: 0.22,
+  totalDisbursedUsdBn: 4.8,
+  totalFacilityUsdBn: 8.4,
+  nextReviewNote: "Not yet formally scheduled — reviews have landed roughly every 3-6 months; a 4th EFF review is plausible around Q4 2026",
+  circularDebtRsTn: 1.924,
+  circularDebtBanksRsBn: 873,
+  circularDebtAsOf: "end-May 2026",
+};
+
+function ImfComboTile() {
+  const latestTranche = IMF_PROGRAM.effTrancheUsdBn + IMF_PROGRAM.rsfTrancheUsdBn;
+  return (
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        Pakistan IMF Program
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
+      </div>
+      <div className="mt-2 flex items-end gap-4">
+        <div>
+          <div className="text-2xl font-semibold text-mari-green">
+            {IMF_PROGRAM.totalDisbursedUsdBn.toFixed(1)}
+            <span className="ml-1 text-sm font-normal text-foreground/50">USD bn</span>
+          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+            Total Disbursed &middot; of {IMF_PROGRAM.totalFacilityUsdBn.toFixed(1)}bn
+          </div>
+        </div>
+        <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />
+        <div>
+          <div className="text-2xl font-semibold text-mari-blue">
+            {latestTranche.toFixed(2)}
+            <span className="ml-1 text-sm font-normal text-foreground/50">USD bn</span>
+          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+            Latest Tranche &middot; {IMF_PROGRAM.latestReviewDate}
+          </div>
+        </div>
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: IMF press releases &middot; updated per review, not a live feed
+      </div>
+    </div>
+  );
+}
+
 function LiveBadge({ isLive }: { isLive: boolean }) {
   if (isLive) {
     return (
@@ -692,6 +752,7 @@ export default function Home() {
               <ErrorNote message={commodityError} />
             </div>
           )}
+          <ImfComboTile />
         </div>
 
         {/* Trade receivables by counterparty */}
@@ -839,6 +900,61 @@ export default function Home() {
                 </p>
               </div>
             )}
+          </Panel>
+
+          <Panel title="Pakistan IMF Program Status" meta="EFF + RSF · updated per IMF review, not a live feed">
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">EFF (Extended Fund Facility)</span>
+                <span className="font-medium text-mari-navy">
+                  USD {IMF_PROGRAM.effTotalUsdBn.toFixed(1)}bn &middot; {IMF_PROGRAM.effMonths}-month &middot;
+                  approved {IMF_PROGRAM.effApproved}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">RSF (Resilience &amp; Sustainability Facility)</span>
+                <span className="font-medium text-mari-navy">
+                  USD {IMF_PROGRAM.rsfTotalUsdBn.toFixed(1)}bn &middot; {IMF_PROGRAM.rsfMonths}-month &middot;
+                  approved {IMF_PROGRAM.rsfApproved}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">Latest review completed</span>
+                <span className="font-medium text-mari-navy">
+                  {IMF_PROGRAM.latestReviewLabel} &middot; {IMF_PROGRAM.latestReviewDate}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">Disbursed this tranche</span>
+                <span className="font-medium text-mari-navy">
+                  USD {IMF_PROGRAM.effTrancheUsdBn.toFixed(1)}bn (EFF) + USD{" "}
+                  {(IMF_PROGRAM.rsfTrancheUsdBn * 1000).toFixed(0)}mn (RSF)
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">Total disbursed to date</span>
+                <span className="font-medium text-mari-navy">
+                  USD {IMF_PROGRAM.totalDisbursedUsdBn.toFixed(1)}bn of {IMF_PROGRAM.totalFacilityUsdBn.toFixed(1)}bn
+                  (~{((IMF_PROGRAM.totalDisbursedUsdBn / IMF_PROGRAM.totalFacilityUsdBn) * 100).toFixed(0)}%)
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">Next review</span>
+                <StatusPill status="warning" label="Not yet scheduled" />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-foreground/70">Flagged risk (power-sector circular debt)</span>
+                <span className="font-medium text-status-critical">
+                  Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(3)}tn ({IMF_PROGRAM.circularDebtAsOf}) — target missed
+                </span>
+              </div>
+              <p className="pt-1 text-xs text-foreground/50">{IMF_PROGRAM.nextReviewNote}.</p>
+              <p className="text-xs text-foreground/50">
+                The circular-debt figure above is the national power-sector version of the same
+                government/utility payment-delay problem behind Mari&apos;s own gas-sector receivables from
+                SNGPL/SSGCL shown further up this page — different segment, same root cause.
+              </p>
+            </div>
           </Panel>
         </div>
       </main>
