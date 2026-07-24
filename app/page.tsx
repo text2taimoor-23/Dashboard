@@ -301,20 +301,20 @@ function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchm
             return (
               <div key={b.code} className="flex items-center justify-between">
                 <span className="text-foreground/60">{b.label}</span>
-                <span className="text-right">
-                  {typeof b.price === "number" ? (
-                    <>
-                      <span className="font-medium text-mari-navy">{b.price.toFixed(2)}</span>
-                      {typeof b.changePercent === "number" && (
-                        <span className={`ml-1.5 text-xs font-medium ${changeColor}`}>
-                          {isUp ? "▲" : isDown ? "▼" : "—"} {Math.abs(b.changePercent).toFixed(2)}%
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-foreground/40">—</span>
-                  )}
-                </span>
+                {typeof b.price === "number" ? (
+                  <span className="flex items-baseline gap-2">
+                    <span className="w-14 text-right font-medium tabular-nums text-mari-navy">
+                      {b.price.toFixed(2)}
+                    </span>
+                    <span className={`w-16 text-right text-xs font-medium tabular-nums ${changeColor}`}>
+                      {typeof b.changePercent === "number"
+                        ? `${isUp ? "▲" : isDown ? "▼" : "—"} ${Math.abs(b.changePercent).toFixed(2)}%`
+                        : ""}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-foreground/40">—</span>
+                )}
               </div>
             );
           })}
