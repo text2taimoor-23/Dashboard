@@ -93,15 +93,8 @@ type GlobalOilBenchmarksResponse = {
   error?: string;
 };
 
-type PsxAnnouncement = {
-  date: string;
-  title: string;
-  category: string;
-  pdfUrl: string;
-};
-
 type PsxAnnouncementsResponse = {
-  announcements?: PsxAnnouncement[];
+  announcements?: TickerItem[];
   fetchedAt?: string;
   source?: string;
   error?: string;
@@ -119,6 +112,20 @@ type HormuzStatusResponse = {
   error?: string;
 };
 
+type TickerItem = {
+  date: string;
+  title: string;
+  category: string;
+  url: string;
+};
+
+type PpisNewsResponse = {
+  news?: TickerItem[];
+  fetchedAt?: string;
+  source?: string;
+  error?: string;
+};
+
 const POLL_INTERVAL_MS = 5 * 60_000;
 const MARI_POLL_INTERVAL_MS = 30 * 60_000;
 const MARI_SHARE_POLL_INTERVAL_MS = 5 * 60_000;
@@ -128,6 +135,8 @@ const OIL_BENCHMARKS_POLL_INTERVAL_MS = 30 * 60_000;
 // requested 9:30am/3:30pm market-open/close refresh points without needing clock-triggered logic.
 const PSX_ANNOUNCEMENTS_POLL_INTERVAL_MS = 60 * 60_000;
 const HORMUZ_POLL_INTERVAL_MS = 60 * 60_000;
+// Same rationale as PSX above — hourly polling naturally covers the requested 9am daily refresh.
+const PPIS_NEWS_POLL_INTERVAL_MS = 60 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
@@ -358,21 +367,27 @@ function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchm
   );
 }
 
-function PsxAnnouncementsTile({
-  announcements,
+function NewsTickerTile({
+  heading,
+  subheading,
+  items,
   error,
+  sourceNote,
 }: {
-  announcements?: PsxAnnouncement[];
+  heading: string;
+  subheading: string;
+  items?: TickerItem[];
   error: string | null;
+  sourceNote: string;
 }) {
   return (
     <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4">
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-        PSX Announcements
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; Mari Updates</span>
+        {heading}
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {subheading}</span>
       </div>
-      {error && !announcements && <div className="mt-2 text-xs text-status-critical">{error}</div>}
-      {announcements && announcements.length > 0 && (
+      {error && !items && <div className="mt-2 text-xs text-status-critical">{error}</div>}
+      {items && items.length > 0 && (
         <div
           className="mt-3 h-28 overflow-hidden"
           style={{
@@ -382,10 +397,10 @@ function PsxAnnouncementsTile({
           }}
         >
           <div className="animate-marquee-vertical flex flex-col gap-3 hover:[animation-play-state:paused]">
-            {[...announcements, ...announcements].map((a, i) => (
+            {[...items, ...items].map((a, i) => (
               <a
-                key={`${a.pdfUrl}-${i}`}
-                href={a.pdfUrl}
+                key={`${a.url}-${i}`}
+                href={a.url}
                 target="_blank"
                 rel="noreferrer"
                 className="flex flex-col gap-0.5 text-sm hover:underline"
@@ -402,10 +417,7 @@ function PsxAnnouncementsTile({
           </div>
         </div>
       )}
-      <div className="mt-2 text-[10px] text-foreground/40">
-        Source: PSX Data Portal (dps.psx.com.pk) &middot; refreshed hourly, spans the 9:30am &amp; 3:30pm market
-        updates
-      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">{sourceNote}</div>
     </div>
   );
 }
@@ -738,6 +750,8 @@ export default function Home() {
   const [psxAnnouncementsError, setPsxAnnouncementsError] = useState<string | null>(null);
   const [hormuzStatus, setHormuzStatus] = useState<HormuzStatusResponse | null>(null);
   const [hormuzStatusError, setHormuzStatusError] = useState<string | null>(null);
+  const [ppisNews, setPpisNews] = useState<PpisNewsResponse | null>(null);
+  const [ppisNewsError, setPpisNewsError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
 
   useEffect(() => {
@@ -955,6 +969,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchPpisNews() {
+      try {
+        const res = await fetch("/api/ppis-news", { cache: "no-store" });
+        const data: PpisNewsResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || data.error) {
+          setPpisNewsError(data.error ?? "Failed to fetch PPIS news");
+          return;
+        }
+
+        setPpisNewsError(null);
+        setPpisNews(data);
+      } catch {
+        if (!cancelled) setPpisNewsError("Network error while fetching PPIS news");
+      }
+    }
+
+    fetchPpisNews();
+    const interval = setInterval(fetchPpisNews, PPIS_NEWS_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const petrol = prices.find((p) => p.code === "PETROL");
   const hsd = prices.find((p) => p.code === "HSD");
   const lastVerifiedGas = mari?.lastVerified;
@@ -1011,11 +1055,28 @@ export default function Home() {
         </div>
 
         {/* Oil & LNG strip — LNG import volume still pending (see note above OIL_IMPORTS_LAST_MONTH) */}
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <ImfProgramTile />
-          <PsxAnnouncementsTile announcements={psxAnnouncements?.announcements} error={psxAnnouncementsError} />
+        </div>
+
+        {/* News tickers */}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <NewsTickerTile
+            heading="PSX Announcements"
+            subheading="Mari Updates"
+            items={psxAnnouncements?.announcements}
+            error={psxAnnouncementsError}
+            sourceNote="Source: PSX Data Portal (dps.psx.com.pk) · refreshed hourly, spans the 9:30am & 3:30pm market updates"
+          />
+          <NewsTickerTile
+            heading="PPIS Sector News"
+            subheading="E&P Sector Updates"
+            items={ppisNews?.news}
+            error={ppisNewsError}
+            sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
+          />
         </div>
 
         {/* Trade receivables by counterparty */}

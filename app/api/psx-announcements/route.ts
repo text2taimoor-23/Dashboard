@@ -11,7 +11,7 @@ const PANELS = [
   { name: "Others", category: "News" },
 ] as const;
 
-type Announcement = { date: string; title: string; category: string; pdfUrl: string };
+type Announcement = { date: string; title: string; category: string; url: string };
 
 function extractPanelRows(html: string, panelName: string, category: string): Announcement[] {
   const panelIdx = html.indexOf(`class="tabs__panel" data-name="${panelName}"`);
@@ -33,7 +33,7 @@ function extractPanelRows(html: string, panelName: string, category: string): An
       date: match[1].trim(),
       title: match[2].trim(),
       category,
-      pdfUrl: `https://dps.psx.com.pk${match[3]}`,
+      url: `https://dps.psx.com.pk${match[3]}`,
     });
   }
 
