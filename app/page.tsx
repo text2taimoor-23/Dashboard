@@ -360,27 +360,29 @@ function PsxAnnouncementsTile({
       {error && !announcements && <div className="mt-2 text-xs text-status-critical">{error}</div>}
       {announcements && announcements.length > 0 && (
         <div
-          className="mt-3 overflow-hidden"
+          className="mt-3 h-28 overflow-hidden"
           style={{
-            maskImage: "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)",
+            maskImage: "linear-gradient(to bottom, transparent, black 12px, black calc(100% - 12px), transparent)",
             WebkitMaskImage:
-              "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)",
+              "linear-gradient(to bottom, transparent, black 12px, black calc(100% - 12px), transparent)",
           }}
         >
-          <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap text-sm hover:[animation-play-state:paused]">
+          <div className="animate-marquee-vertical flex flex-col gap-3 hover:[animation-play-state:paused]">
             {[...announcements, ...announcements].map((a, i) => (
               <a
                 key={`${a.pdfUrl}-${i}`}
                 href={a.pdfUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 hover:underline"
+                className="flex flex-col gap-0.5 text-sm hover:underline"
               >
-                <span className="text-xs text-foreground/50">{a.date}</span>
-                <span className="text-foreground/80">{a.title}</span>
-                <span className="shrink-0 rounded-full bg-mari-gray-light/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
-                  {a.category}
+                <span className="flex items-center gap-2 text-xs text-foreground/50">
+                  {a.date}
+                  <span className="rounded-full bg-mari-gray-light/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+                    {a.category}
+                  </span>
                 </span>
+                <span className="text-foreground/80">{a.title}</span>
               </a>
             ))}
           </div>
