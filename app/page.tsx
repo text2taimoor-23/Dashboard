@@ -92,11 +92,28 @@ type GlobalOilBenchmarksResponse = {
   error?: string;
 };
 
+type PsxAnnouncement = {
+  date: string;
+  title: string;
+  category: string;
+  pdfUrl: string;
+};
+
+type PsxAnnouncementsResponse = {
+  announcements?: PsxAnnouncement[];
+  fetchedAt?: string;
+  source?: string;
+  error?: string;
+};
+
 const POLL_INTERVAL_MS = 5 * 60_000;
 const MARI_POLL_INTERVAL_MS = 30 * 60_000;
 const MARI_SHARE_POLL_INTERVAL_MS = 5 * 60_000;
 const COMMODITY_POLL_INTERVAL_MS = 30 * 60_000;
 const OIL_BENCHMARKS_POLL_INTERVAL_MS = 30 * 60_000;
+// PSX news doesn't have a live feed either — hourly polling naturally covers the
+// requested 9:30am/3:30pm market-open/close refresh points without needing clock-triggered logic.
+const PSX_ANNOUNCEMENTS_POLL_INTERVAL_MS = 60 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
@@ -322,6 +339,47 @@ function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchm
       )}
       <div className="mt-2 text-[10px] text-foreground/40">
         Source: oilprice.com &middot; Arab Light is the daily market estimate, not the monthly Aramco OSP
+      </div>
+    </div>
+  );
+}
+
+function PsxAnnouncementsTile({
+  announcements,
+  error,
+}: {
+  announcements?: PsxAnnouncement[];
+  error: string | null;
+}) {
+  return (
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        PSX Announcements
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; Mari Updates</span>
+      </div>
+      {error && !announcements && <div className="mt-2 text-xs text-status-critical">{error}</div>}
+      {announcements && (
+        <div className="mt-2 divide-y divide-mari-gray-light/60">
+          {announcements.map((a) => (
+            <a
+              key={a.pdfUrl}
+              href={a.pdfUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 py-2 text-sm first:pt-0 last:pb-0 hover:bg-mari-gray-light/20"
+            >
+              <span className="w-20 shrink-0 text-xs text-foreground/50">{a.date}</span>
+              <span className="flex-1 truncate text-foreground/80">{a.title}</span>
+              <span className="shrink-0 rounded-full bg-mari-gray-light/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+                {a.category}
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: PSX Data Portal (dps.psx.com.pk) &middot; refreshed hourly, spans the 9:30am &amp; 3:30pm market
+        updates
       </div>
     </div>
   );
@@ -613,6 +671,8 @@ export default function Home() {
   const [commodityError, setCommodityError] = useState<string | null>(null);
   const [oilBenchmarks, setOilBenchmarks] = useState<GlobalOilBenchmarksResponse | null>(null);
   const [oilBenchmarksError, setOilBenchmarksError] = useState<string | null>(null);
+  const [psxAnnouncements, setPsxAnnouncements] = useState<PsxAnnouncementsResponse | null>(null);
+  const [psxAnnouncementsError, setPsxAnnouncementsError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
 
   useEffect(() => {
@@ -770,6 +830,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchPsxAnnouncements() {
+      try {
+        const res = await fetch("/api/psx-announcements", { cache: "no-store" });
+        const data: PsxAnnouncementsResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || data.error) {
+          setPsxAnnouncementsError(data.error ?? "Failed to fetch PSX announcements");
+          return;
+        }
+
+        setPsxAnnouncementsError(null);
+        setPsxAnnouncements(data);
+      } catch {
+        if (!cancelled) setPsxAnnouncementsError("Network error while fetching PSX announcements");
+      }
+    }
+
+    fetchPsxAnnouncements();
+    const interval = setInterval(fetchPsxAnnouncements, PSX_ANNOUNCEMENTS_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const petrol = prices.find((p) => p.code === "PETROL");
   const hsd = prices.find((p) => p.code === "HSD");
   const lastVerifiedGas = mari?.lastVerified;
@@ -822,6 +912,11 @@ export default function Home() {
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <ImfProgramTile />
+        </div>
+
+        {/* PSX announcements / Mari news */}
+        <div className="mt-4">
+          <PsxAnnouncementsTile announcements={psxAnnouncements?.announcements} error={psxAnnouncementsError} />
         </div>
 
         {/* Trade receivables by counterparty */}
