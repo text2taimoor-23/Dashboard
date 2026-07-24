@@ -107,6 +107,18 @@ type PsxAnnouncementsResponse = {
   error?: string;
 };
 
+type HormuzStatusResponse = {
+  status?: "open" | "closed";
+  dayCount?: number | null;
+  brentPrice?: number | null;
+  brentChangePercent?: number | null;
+  warRiskMultiplier?: number | null;
+  asOf?: string | null;
+  fetchedAt?: string;
+  source?: string;
+  error?: string;
+};
+
 const POLL_INTERVAL_MS = 5 * 60_000;
 const MARI_POLL_INTERVAL_MS = 30 * 60_000;
 const MARI_SHARE_POLL_INTERVAL_MS = 5 * 60_000;
@@ -115,6 +127,7 @@ const OIL_BENCHMARKS_POLL_INTERVAL_MS = 30 * 60_000;
 // PSX news doesn't have a live feed either — hourly polling naturally covers the
 // requested 9:30am/3:30pm market-open/close refresh points without needing clock-triggered logic.
 const PSX_ANNOUNCEMENTS_POLL_INTERVAL_MS = 60 * 60_000;
+const HORMUZ_POLL_INTERVAL_MS = 60 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
@@ -440,6 +453,44 @@ function StatusPill({ status, label }: { status: "good" | "warning" | "critical"
   );
 }
 
+function HormuzStatusBadge({ data, error }: { data: HormuzStatusResponse | null; error: string | null }) {
+  if (!data?.status) return null;
+  const isClosed = data.status === "closed";
+  const tooltipParts: string[] = [];
+  if (typeof data.brentPrice === "number") {
+    tooltipParts.push(
+      `Brent $${data.brentPrice.toFixed(2)}${
+        typeof data.brentChangePercent === "number"
+          ? ` (${data.brentChangePercent > 0 ? "+" : ""}${data.brentChangePercent.toFixed(1)}%)`
+          : ""
+      }`
+    );
+  }
+  if (typeof data.warRiskMultiplier === "number") {
+    tooltipParts.push(`War-risk ${data.warRiskMultiplier.toFixed(1)}x normal`);
+  }
+  if (data.asOf) tooltipParts.push(`Updated ${data.asOf}`);
+  if (error) tooltipParts.push(error);
+
+  return (
+    <a
+      href={data.source ?? "https://straits.live"}
+      target="_blank"
+      rel="noreferrer"
+      title={tooltipParts.join(" · ")}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+        isClosed ? "bg-status-critical/10 text-status-critical" : "bg-status-good/10 text-status-good"
+      }`}
+    >
+      <span className={`h-2 w-2 rounded-full ${isClosed ? "bg-status-critical" : "bg-status-good"}`} />
+      Hormuz: {data.status}
+      {typeof data.dayCount === "number" && (
+        <span className="ml-1 font-normal normal-case text-foreground/50">&middot; Day {data.dayCount}</span>
+      )}
+    </a>
+  );
+}
+
 function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint }) {
   if (!petrol && !hsd) return null;
   const unit = petrol?.unit ?? hsd?.unit;
@@ -685,6 +736,8 @@ export default function Home() {
   const [oilBenchmarksError, setOilBenchmarksError] = useState<string | null>(null);
   const [psxAnnouncements, setPsxAnnouncements] = useState<PsxAnnouncementsResponse | null>(null);
   const [psxAnnouncementsError, setPsxAnnouncementsError] = useState<string | null>(null);
+  const [hormuzStatus, setHormuzStatus] = useState<HormuzStatusResponse | null>(null);
+  const [hormuzStatusError, setHormuzStatusError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
 
   useEffect(() => {
@@ -872,6 +925,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchHormuzStatus() {
+      try {
+        const res = await fetch("/api/hormuz-status", { cache: "no-store" });
+        const data: HormuzStatusResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || data.error) {
+          setHormuzStatusError(data.error ?? "Failed to fetch Strait of Hormuz status");
+          return;
+        }
+
+        setHormuzStatusError(null);
+        setHormuzStatus(data);
+      } catch {
+        if (!cancelled) setHormuzStatusError("Network error while fetching Strait of Hormuz status");
+      }
+    }
+
+    fetchHormuzStatus();
+    const interval = setInterval(fetchHormuzStatus, HORMUZ_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const petrol = prices.find((p) => p.code === "PETROL");
   const hsd = prices.find((p) => p.code === "HSD");
   const lastVerifiedGas = mari?.lastVerified;
@@ -896,7 +979,10 @@ export default function Home() {
             <h1 className="text-2xl font-semibold tracking-tight text-mari-navy">Overview</h1>
             <p className="mt-1 text-sm text-foreground/70">{today}</p>
           </div>
-          <LiveBadge isLive={overallLive} />
+          <div className="flex items-center gap-2">
+            <HormuzStatusBadge data={hormuzStatus} error={hormuzStatusError} />
+            <LiveBadge isLive={overallLive} />
+          </div>
         </div>
 
         {/* KPI strip */}
