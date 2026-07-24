@@ -358,23 +358,32 @@ function PsxAnnouncementsTile({
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; Mari Updates</span>
       </div>
       {error && !announcements && <div className="mt-2 text-xs text-status-critical">{error}</div>}
-      {announcements && (
-        <div className="mt-2 divide-y divide-mari-gray-light/60">
-          {announcements.map((a) => (
-            <a
-              key={a.pdfUrl}
-              href={a.pdfUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-3 py-2 text-sm first:pt-0 last:pb-0 hover:bg-mari-gray-light/20"
-            >
-              <span className="w-20 shrink-0 text-xs text-foreground/50">{a.date}</span>
-              <span className="flex-1 truncate text-foreground/80">{a.title}</span>
-              <span className="shrink-0 rounded-full bg-mari-gray-light/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
-                {a.category}
-              </span>
-            </a>
-          ))}
+      {announcements && announcements.length > 0 && (
+        <div
+          className="mt-3 overflow-hidden"
+          style={{
+            maskImage: "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)",
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)",
+          }}
+        >
+          <div className="animate-marquee flex w-max items-center gap-8 whitespace-nowrap text-sm hover:[animation-play-state:paused]">
+            {[...announcements, ...announcements].map((a, i) => (
+              <a
+                key={`${a.pdfUrl}-${i}`}
+                href={a.pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 hover:underline"
+              >
+                <span className="text-xs text-foreground/50">{a.date}</span>
+                <span className="text-foreground/80">{a.title}</span>
+                <span className="shrink-0 rounded-full bg-mari-gray-light/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+                  {a.category}
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
       )}
       <div className="mt-2 text-[10px] text-foreground/40">
@@ -912,10 +921,6 @@ export default function Home() {
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <ImfProgramTile />
-        </div>
-
-        {/* PSX announcements / Mari news */}
-        <div className="mt-4">
           <PsxAnnouncementsTile announcements={psxAnnouncements?.announcements} error={psxAnnouncementsError} />
         </div>
 
