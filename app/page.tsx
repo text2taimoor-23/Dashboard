@@ -559,24 +559,18 @@ function GasComboTile({
       <div className="mt-2 flex items-end gap-4">
         {benchmark && (
           <div>
-            <div className="text-2xl font-semibold text-mari-green">
-              {benchmark.value.toFixed(2)}
-              <span className="ml-1 text-sm font-normal text-foreground/50">{benchmark.currency}</span>
-            </div>
+            <div className="text-2xl font-semibold text-mari-green">{benchmark.value.toFixed(2)}</div>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
-              Benchmark &middot; /{benchmark.unit}
+              Benchmark &middot; {benchmark.currency}/{benchmark.unit}
             </div>
           </div>
         )}
         {benchmark && incremental && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
         {incremental && (
           <div>
-            <div className="text-2xl font-semibold text-mari-blue">
-              {incremental.value.toFixed(4)}
-              <span className="ml-1 text-sm font-normal text-foreground/50">{incremental.currency}</span>
-            </div>
+            <div className="text-2xl font-semibold text-mari-blue">{incremental.value.toFixed(4)}</div>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
-              Incremental &middot; /{incremental.unit}
+              Incremental &middot; {incremental.currency}/{incremental.unit}
             </div>
           </div>
         )}
@@ -1029,8 +1023,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* KPI strip */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* KPI strip, row 1 — core price/financial stats at a glance */}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <FuelComboTile petrol={petrol} hsd={hsd} />
           <GasComboTile
             benchmark={lastVerifiedGas?.benchmark}
@@ -1052,17 +1046,17 @@ export default function Home() {
             />
           )}
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
-        </div>
-
-        {/* Oil & LNG strip — LNG import volume still pending (see note above OIL_IMPORTS_LAST_MONTH) */}
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
-          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
-          <ImfProgramTile />
         </div>
 
-        {/* News tickers */}
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* KPI strip, row 2 — market context + news, LNG import volume still pending (see note
+            above OIL_IMPORTS_LAST_MONTH). Global Oil Benchmarks spans 2 columns since it carries
+            the most content (6 rows) — keeps every tile in both rows the same column width. */}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
+          </div>
+          <ImfProgramTile />
           <NewsTickerTile
             heading="PSX Announcements"
             subheading="Mari Updates"
