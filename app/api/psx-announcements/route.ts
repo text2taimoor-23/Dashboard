@@ -62,7 +62,7 @@ export async function GET() {
     all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return NextResponse.json({
-      announcements: all.slice(0, 8),
+      announcements: all.slice(0, 3),
       fetchedAt: new Date().toISOString(),
       source: PSX_MARI_URL,
     });
