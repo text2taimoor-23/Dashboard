@@ -27,6 +27,7 @@ type MariShareApiResponse = {
   changePercent?: number | null;
   direction?: "up" | "down" | "flat";
   previousClose?: number | null;
+  marketCapPkrBn?: number | null;
   asOf?: string | null;
   fetchedAt?: string;
   source?: string;
@@ -913,6 +914,11 @@ export default function Home() {
               delta={mariShare.change}
               deltaPercent={mariShare.changePercent}
               direction={mariShare.direction}
+              caption={
+                typeof mariShare.marketCapPkrBn === "number"
+                  ? `Market Cap: PKR ${mariShare.marketCapPkrBn.toFixed(1)}bn`
+                  : undefined
+              }
             />
           )}
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />

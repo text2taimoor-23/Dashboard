@@ -26,6 +26,11 @@ export async function GET() {
     const changePercentStr = extractBetween(html, /class="change__percent">\s*\(([-\d,.]+)%\)<\/div>/);
     const ldcpStr = extractBetween(html, /class="stats_label">LDCP<\/div><div class="stats_value">([\d,.]+)<\/div>/);
     const asOf = extractBetween(html, /class="quote__date">\^?\s*As of ([^<]+)<\/div>/);
+    // Equity Profile's "Market Cap (000's)" stat is in thousands of PKR — divide by 1e6 for PKR bn.
+    const marketCapThousandsStr = extractBetween(
+      html,
+      /Market Cap \(000'<span[^>]*>s<\/span>\)<\/div><div class="stats_value">([\d,.]+)<\/div>/
+    );
 
     if (priceStr === null || changeValueStr === null) {
       throw new Error("Could not find MARI share price on the PSX page — the site layout may have changed.");
@@ -36,6 +41,9 @@ export async function GET() {
     const changePercent = changePercentStr ? parseFloat(changePercentStr.replace(/,/g, "")) : null;
     const previousClose = ldcpStr ? parseFloat(ldcpStr.replace(/,/g, "")) : null;
     const direction = changeDirection === "pos" ? "up" : changeDirection === "neg" ? "down" : changeValue === 0 ? "flat" : changeValue > 0 ? "up" : "down";
+    const marketCapPkrBn = marketCapThousandsStr
+      ? parseFloat(marketCapThousandsStr.replace(/,/g, "")) / 1_000_000
+      : null;
 
     return NextResponse.json({
       symbol: "MARI",
@@ -46,6 +54,7 @@ export async function GET() {
       changePercent,
       direction,
       previousClose,
+      marketCapPkrBn,
       asOf,
       fetchedAt: new Date().toISOString(),
       source: PSX_MARI_QUOTE_URL,
