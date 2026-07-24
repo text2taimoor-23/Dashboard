@@ -820,63 +820,8 @@ export default function Home() {
         {/* Oil & LNG strip — LNG import volume still pending (see note above OIL_IMPORTS_LAST_MONTH) */}
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
-          {commodities?.oil && (
-            <StatTile
-              label="Dubai Crude Oil"
-              value={`${commodities.oil.currency} ${commodities.oil.price.toFixed(2)}`}
-              unit={`/${commodities.oil.unit}`}
-              delta={
-                typeof commodities.oil.previousPrice24h === "number"
-                  ? commodities.oil.price - commodities.oil.previousPrice24h
-                  : undefined
-              }
-              deltaPercent={commodities.oil.changePercent24h}
-              direction={
-                commodities.oil.changePercent24h === null
-                  ? "flat"
-                  : commodities.oil.changePercent24h > 0
-                    ? "up"
-                    : commodities.oil.changePercent24h < 0
-                      ? "down"
-                      : "flat"
-              }
-              caption="24h change"
-            />
-          )}
-          {commodities?.lng && (
-            <StatTile
-              label="JKM LNG (Spot)"
-              value={`${commodities.lng.currency} ${commodities.lng.price.toFixed(2)}`}
-              unit={`/${commodities.lng.unit}`}
-              delta={
-                typeof commodities.lng.previousPrice24h === "number"
-                  ? commodities.lng.price - commodities.lng.previousPrice24h
-                  : undefined
-              }
-              deltaPercent={commodities.lng.changePercent24h}
-              direction={
-                commodities.lng.changePercent24h === null
-                  ? "flat"
-                  : commodities.lng.changePercent24h > 0
-                    ? "up"
-                    : commodities.lng.changePercent24h < 0
-                      ? "down"
-                      : "flat"
-              }
-              caption="24h change"
-            />
-          )}
-          {commodityError && !commodities?.oil && !commodities?.lng && (
-            <div className="sm:col-span-2 lg:col-span-2">
-              <ErrorNote message={commodityError} />
-            </div>
-          )}
-          <ImfProgramTile />
-        </div>
-
-        {/* Global oil benchmarks — Arab Light, Oman, Das, WTI, Brent, OPEC Basket in one tile */}
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
+          <ImfProgramTile />
         </div>
 
         {/* Trade receivables by counterparty */}
