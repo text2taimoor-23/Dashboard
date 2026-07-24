@@ -74,10 +74,29 @@ type CommodityApiResponse = {
   source?: string;
 };
 
+type OilBenchmark = {
+  code: string;
+  label: string;
+  price?: number;
+  change?: number | null;
+  changePercent?: number | null;
+  delay?: string | null;
+};
+
+type GlobalOilBenchmarksResponse = {
+  benchmarks?: OilBenchmark[];
+  currency?: string;
+  unit?: string;
+  fetchedAt?: string;
+  source?: string;
+  error?: string;
+};
+
 const POLL_INTERVAL_MS = 5 * 60_000;
 const MARI_POLL_INTERVAL_MS = 30 * 60_000;
 const MARI_SHARE_POLL_INTERVAL_MS = 5 * 60_000;
 const COMMODITY_POLL_INTERVAL_MS = 30 * 60_000;
+const OIL_BENCHMARKS_POLL_INTERVAL_MS = 30 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
@@ -260,6 +279,49 @@ function ImfProgramTile() {
       </div>
       <div className="mt-2 text-[10px] text-foreground/40">
         Source: IMF Staff Report &middot; updated per review, not a live feed
+      </div>
+    </div>
+  );
+}
+
+function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
+  return (
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+        Global Oil Benchmarks
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/barrel</span>
+      </div>
+      {error && !benchmarks && <div className="mt-2 text-xs text-status-critical">{error}</div>}
+      {benchmarks && (
+        <div className="mt-2 space-y-1.5 text-sm">
+          {benchmarks.map((b) => {
+            const isUp = (b.changePercent ?? 0) > 0;
+            const isDown = (b.changePercent ?? 0) < 0;
+            const changeColor = isUp ? "text-status-good" : isDown ? "text-status-critical" : "text-foreground/50";
+            return (
+              <div key={b.code} className="flex items-center justify-between">
+                <span className="text-foreground/60">{b.label}</span>
+                <span className="text-right">
+                  {typeof b.price === "number" ? (
+                    <>
+                      <span className="font-medium text-mari-navy">{b.price.toFixed(2)}</span>
+                      {typeof b.changePercent === "number" && (
+                        <span className={`ml-1.5 text-xs font-medium ${changeColor}`}>
+                          {isUp ? "▲" : isDown ? "▼" : "—"} {Math.abs(b.changePercent).toFixed(2)}%
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-foreground/40">—</span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: oilprice.com &middot; Arab Light is the daily market estimate, not the monthly Aramco OSP
       </div>
     </div>
   );
@@ -549,6 +611,8 @@ export default function Home() {
   const [mariShareError, setMariShareError] = useState<string | null>(null);
   const [commodities, setCommodities] = useState<CommodityApiResponse | null>(null);
   const [commodityError, setCommodityError] = useState<string | null>(null);
+  const [oilBenchmarks, setOilBenchmarks] = useState<GlobalOilBenchmarksResponse | null>(null);
+  const [oilBenchmarksError, setOilBenchmarksError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
 
   useEffect(() => {
@@ -676,6 +740,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchOilBenchmarks() {
+      try {
+        const res = await fetch("/api/global-oil-benchmarks", { cache: "no-store" });
+        const data: GlobalOilBenchmarksResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || data.error) {
+          setOilBenchmarksError(data.error ?? "Failed to fetch global oil benchmarks");
+          return;
+        }
+
+        setOilBenchmarksError(null);
+        setOilBenchmarks(data);
+      } catch {
+        if (!cancelled) setOilBenchmarksError("Network error while fetching global oil benchmarks");
+      }
+    }
+
+    fetchOilBenchmarks();
+    const interval = setInterval(fetchOilBenchmarks, OIL_BENCHMARKS_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const petrol = prices.find((p) => p.code === "PETROL");
   const hsd = prices.find((p) => p.code === "HSD");
   const lastVerifiedGas = mari?.lastVerified;
@@ -778,6 +872,11 @@ export default function Home() {
             </div>
           )}
           <ImfProgramTile />
+        </div>
+
+        {/* Global oil benchmarks — Arab Light, Oman, Das, WTI, Brent, OPEC Basket in one tile */}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
         </div>
 
         {/* Trade receivables by counterparty */}
