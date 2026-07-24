@@ -186,7 +186,7 @@ function OilImportsTile({
   source: string;
 }) {
   return (
-    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4 shadow-sm">
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Pakistan Oil Imports
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {periodLabel}</span>
@@ -446,7 +446,7 @@ function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint 
   const currency = petrol?.currency ?? hsd?.currency;
 
   return (
-    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4 shadow-sm">
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Petrol &amp; HSD
         {currency && unit && (
@@ -486,7 +486,7 @@ function GasComboTile({
   if (!benchmark && !incremental) return null;
 
   return (
-    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4 shadow-sm">
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Gas Benchmark &amp; Incremental
         {periodShort && (
@@ -644,7 +644,7 @@ function StatTile({
   const arrow = isUp ? "▲" : isDown ? "▼" : "—";
 
   return (
-    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-mari-gray-light/60 bg-white p-4 shadow-sm">
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-mari-navy">
         {value}
