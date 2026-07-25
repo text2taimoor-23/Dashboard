@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 type PricePoint = {
   code: string;
@@ -240,6 +241,75 @@ function OilImportsTile({
       </div>
       <div className="mt-2 text-[10px] text-foreground/40">
         Source: {source} &middot; latest month with published data (~1 month lag)
+      </div>
+    </div>
+  );
+}
+
+// Mari Energies' share of Pakistan's total weekly oil/gas production, from PPIS's Upstream
+// Activities portal (ppisonline.com/upstream-activities — login-gated, no public API). Not
+// pollable like the rest of this dashboard: PPIS requires an authenticated session, so this is
+// pulled by hand each week (Claude logs in with the user present, reads the two "Weekly
+// Production" PDFs, and updates this constant) rather than fetched by a server route.
+// Oil: sums both "Mari Energies" rows in the report (Northern region — Halini/Dharian/Shewa/
+// Spinwarm/Kalabagh — and Southern region — Sujjal/Shams/Bolan East) against the report's Grand
+// Total. Gas: the single "Mari Energies" sub-total (Mari/Halini/Sujjal/Shewa/Shams/Spinwarm/
+// Kalabagh) against the Grand Total.
+const MARI_PRODUCTION_SHARE = {
+  periodLabel: "Jul 9-16, 2026",
+  oil: { mariBbl: 13778.875, totalBbl: 570754.2, unit: "bbl" },
+  gas: { mariMmcft: 7656.371, totalMmcft: 24039.02, unit: "MMCFT" },
+  source: "PPIS Upstream Activities · Weekly Oil/Gas Production reports",
+};
+
+function ProductionShareDonut({
+  label,
+  mariValue,
+  totalValue,
+  unit,
+  color,
+}: {
+  label: string;
+  mariValue: number;
+  totalValue: number;
+  unit: string;
+  color: string;
+}) {
+  const mariPercent = (mariValue / totalValue) * 100;
+  const data = [
+    { name: "Mari Energies", value: mariPercent },
+    { name: "Rest of sector", value: 100 - mariPercent },
+  ];
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative h-40 w-40">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius="70%"
+              outerRadius="100%"
+              startAngle={90}
+              endAngle={-270}
+              stroke="none"
+              isAnimationActive={false}
+            >
+              <Cell fill={color} />
+              <Cell fill="#d3d3d3" />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-semibold text-mari-navy">{mariPercent.toFixed(2)}%</span>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">{label}</span>
+        </div>
+      </div>
+      <div className="mt-2 text-center text-xs text-foreground/60">
+        Mari: {mariValue.toLocaleString("en-US", { maximumFractionDigits: 0 })} {unit} of{" "}
+        {totalValue.toLocaleString("en-US", { maximumFractionDigits: 0 })} {unit}
       </div>
     </div>
   );
@@ -1238,6 +1308,32 @@ export default function Home() {
                 </p>
               </div>
             )}
+          </Panel>
+
+          <Panel
+            title="Mari Share of National Production"
+            meta={`Week of ${MARI_PRODUCTION_SHARE.periodLabel} · ${MARI_PRODUCTION_SHARE.source}`}
+          >
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <ProductionShareDonut
+                label="Oil"
+                mariValue={MARI_PRODUCTION_SHARE.oil.mariBbl}
+                totalValue={MARI_PRODUCTION_SHARE.oil.totalBbl}
+                unit={MARI_PRODUCTION_SHARE.oil.unit}
+                color="#14963a"
+              />
+              <ProductionShareDonut
+                label="Gas"
+                mariValue={MARI_PRODUCTION_SHARE.gas.mariMmcft}
+                totalValue={MARI_PRODUCTION_SHARE.gas.totalMmcft}
+                unit={MARI_PRODUCTION_SHARE.gas.unit}
+                color="#1ea0eb"
+              />
+            </div>
+            <p className="mt-3 text-xs text-foreground/50">
+              Login-gated source — pulled by hand when logged into PPIS's Upstream Activities portal, not polled
+              automatically like the rest of this dashboard.
+            </p>
           </Panel>
 
           <Panel title="Pakistan IMF Program Status" meta="EFF + RSF · updated per IMF review, not a live feed">
