@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import {
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type PricePoint = {
   code: string;
@@ -463,6 +473,19 @@ const OIL_PRICE_OUTLOOK = {
   ],
   disclaimer:
     "This is a summary of publicly published third-party forecasts and current news, not a Mari Energies or Claude prediction, model, or investment advice. Oil forecasting is inherently uncertain, especially amid an active regional conflict — treat these as illustrative scenario ranges, not point forecasts, and do not use this for trading or hedging decisions without independent professional advice.",
+  // Illustrative smoothed paths from today's actual Brent price (~$100, matching the Global Oil
+  // Benchmarks tile and the Hormuz badge) to each scenario's stated 6-month range midpoint — NOT
+  // month-by-month figures from any single source (none of the cited forecasters publish a full
+  // monthly path for all three cases). Purely for visualizing the scenario spread over time.
+  trendPath: [
+    { month: "Jul", bear: 100, base: 100, bull: 100 },
+    { month: "Aug", bear: 96, base: 98, bull: 102 },
+    { month: "Sep", bear: 90, base: 97, bull: 106 },
+    { month: "Oct", bear: 85, base: 96, bull: 110 },
+    { month: "Nov", bear: 81, base: 97, bull: 113 },
+    { month: "Dec", bear: 78, base: 98, bull: 115 },
+    { month: "Jan", bear: 77, base: 97, bull: 116 },
+  ],
 };
 
 // Pakistan's IMF EFF + RSF program status, read from IMF press releases (imf.org/en/countries/pak).
@@ -497,58 +520,6 @@ const IMF_PROGRAM = {
   circularDebtBanksRsBn: 873,
   circularDebtAsOf: "end-May 2026",
 };
-
-function ImfProgramTile() {
-  const latestTranche = IMF_PROGRAM.effTrancheUsdBn + IMF_PROGRAM.rsfTrancheUsdBn;
-  const nextTranche = IMF_PROGRAM.nextReviewEffUsdBn + IMF_PROGRAM.nextReviewRsfUsdBn;
-  const disbursedPercent = (IMF_PROGRAM.totalDisbursedUsdBn / IMF_PROGRAM.totalFacilityUsdBn) * 100;
-
-  return (
-    <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
-        Pakistan IMF Program
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
-      </div>
-      <div className="mt-2 space-y-1.5 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-foreground/60">Facility</span>
-          <span className="font-medium text-mari-navy">USD {IMF_PROGRAM.totalFacilityUsdBn.toFixed(1)}bn</span>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-foreground/60">Latest Tranche</span>
-          <span className="text-right">
-            <span className="font-medium text-mari-navy">USD {latestTranche.toFixed(2)}bn</span>
-            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.latestReviewDate}</div>
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-foreground/60">Next Tranche</span>
-          <span className="text-right">
-            <span className="font-medium text-mari-navy">&#8776;USD {nextTranche.toFixed(2)}bn</span>
-            <div className="text-[10px] text-foreground/40">test {IMF_PROGRAM.nextReviewTestDate}</div>
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-foreground/60">Circular Debt</span>
-          <span className="text-right">
-            <span className="font-medium text-status-critical">Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(2)}tn</span>
-            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.circularDebtAsOf}</div>
-          </span>
-        </div>
-      </div>
-      <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-sm">
-        <span className="font-semibold text-foreground/70">Total Disbursed</span>
-        <span className="font-semibold text-mari-green">
-          USD {IMF_PROGRAM.totalDisbursedUsdBn.toFixed(1)}bn
-          <span className="ml-1 text-xs font-normal text-foreground/50">({disbursedPercent.toFixed(0)}%)</span>
-        </span>
-      </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
-        Source: IMF Staff Report &middot; updated per review, not a live feed
-      </div>
-    </div>
-  );
-}
 
 function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
   return (
@@ -891,6 +862,49 @@ function OilPriceOutlook() {
             <p className="mt-2 text-[10px] leading-snug text-foreground/40">{s.sources}</p>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function OilOutlookTrendTile() {
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        Oil Price Outlook
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; Brent scenario</span>
+      </div>
+      <div className="mt-1 h-20 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={OIL_PRICE_OUTLOOK.trendPath} margin={{ top: 2, right: 2, left: -30, bottom: 0 }}>
+            <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#58595b" }} axisLine={false} tickLine={false} interval={1} />
+            <YAxis tick={{ fontSize: 9, fill: "#58595b" }} axisLine={false} tickLine={false} domain={[60, 130]} width={26} />
+            <Tooltip
+              formatter={(value: number, name: string) => [`$${value}`, name]}
+              contentStyle={{ fontSize: 10, borderRadius: 2, borderColor: "#d3d3d3" }}
+            />
+            <Line type="monotone" dataKey="bull" name="Bull" stroke="#d03b3b" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="base" name="Base" stroke="#1ea0eb" strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="bear" name="Bear" stroke="#0ca30c" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-1 flex items-center justify-center gap-2 text-[9px] text-foreground/60">
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-status-critical" />
+          Bull $105-125
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-mari-blue" />
+          Base $90-105
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-status-good" />
+          Bear $70-85
+        </span>
+      </div>
+      <div className="mt-1 text-[10px] text-foreground/40">
+        Scenario range, not a prediction &middot; {OIL_PRICE_OUTLOOK.horizonLabel}
       </div>
     </div>
   );
@@ -1316,7 +1330,7 @@ export default function Home() {
             above OIL_IMPORTS_LAST_MONTH). 5 single-column tiles, same width as row 1. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
-          <ImfProgramTile />
+          <OilOutlookTrendTile />
           <NewsTickerTile
             heading="PSX Announcements"
             subheading="Mari Updates"
