@@ -255,12 +255,60 @@ function OilImportsTile({
 // Spinwarm/Kalabagh — and Southern region — Sujjal/Shams/Bolan East) against the report's Grand
 // Total. Gas: the single "Mari Energies" sub-total (Mari/Halini/Sujjal/Shewa/Shams/Spinwarm/
 // Kalabagh) against the Grand Total.
+// topProducer is each field's combined company total (summing a company's rows across both the
+// report's Northern and Southern region sections where it appears in both, e.g. OGDCL). For gas,
+// Mari Energies itself is the top producer nationally this week — ahead of OGDCL (6,894.58 MMCFT).
 const MARI_PRODUCTION_SHARE = {
   periodLabel: "Jul 9-16, 2026",
-  oil: { mariBbl: 13778.875, totalBbl: 570754.2, unit: "bbl" },
-  gas: { mariMmcft: 7656.371, totalMmcft: 24039.02, unit: "MMCFT" },
+  oil: {
+    mariBbl: 13778.875,
+    totalBbl: 570754.2,
+    unit: "bbl",
+    topProducer: { name: "OGDCL", value: 315339.0 },
+  },
+  gas: {
+    mariMmcft: 7656.371,
+    totalMmcft: 24039.02,
+    unit: "MMCFT",
+    topProducer: { name: "Mari Energies", value: 7656.371 },
+  },
   source: "PPIS Upstream Activities · Weekly Oil/Gas Production reports",
 };
+
+function DonutRing({ percent, color, size }: { percent: number; color: string; size: number }) {
+  const data = [
+    { name: "Mari Energies", value: percent },
+    { name: "Rest of sector", value: 100 - percent },
+  ];
+
+  return (
+    <div className="relative" style={{ height: size, width: size }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius="70%"
+            outerRadius="100%"
+            startAngle={90}
+            endAngle={-270}
+            stroke="none"
+            isAnimationActive={false}
+          >
+            <Cell fill={color} />
+            <Cell fill="#d3d3d3" />
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-mari-navy">
+        <span className={size >= 120 ? "text-2xl font-semibold" : "text-xs font-semibold"}>
+          {percent.toFixed(percent < 10 ? 2 : 1)}%
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function ProductionShareDonut({
   label,
@@ -276,40 +324,92 @@ function ProductionShareDonut({
   color: string;
 }) {
   const mariPercent = (mariValue / totalValue) * 100;
-  const data = [
-    { name: "Mari Energies", value: mariPercent },
-    { name: "Rest of sector", value: 100 - mariPercent },
-  ];
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative h-40 w-40">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              innerRadius="70%"
-              outerRadius="100%"
-              startAngle={90}
-              endAngle={-270}
-              stroke="none"
-              isAnimationActive={false}
-            >
-              <Cell fill={color} />
-              <Cell fill="#d3d3d3" />
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-semibold text-mari-navy">{mariPercent.toFixed(2)}%</span>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">{label}</span>
-        </div>
-      </div>
-      <div className="mt-2 text-center text-xs text-foreground/60">
+      <DonutRing percent={mariPercent} color={color} size={160} />
+      <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-foreground/50">{label}</span>
+      <div className="mt-1 text-center text-xs text-foreground/60">
         Mari: {mariValue.toLocaleString("en-US", { maximumFractionDigits: 0 })} {unit} of{" "}
         {totalValue.toLocaleString("en-US", { maximumFractionDigits: 0 })} {unit}
+      </div>
+    </div>
+  );
+}
+
+function fmtWhole(n: number) {
+  return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+function ProductionShareStat({
+  percent,
+  color,
+  label,
+  unit,
+  topProducer,
+  totalValue,
+  mariValue,
+}: {
+  percent: number;
+  color: string;
+  label: string;
+  unit: string;
+  topProducer: { name: string; value: number };
+  totalValue: number;
+  mariValue: number;
+}) {
+  const isMariTop = topProducer.name === "Mari Energies";
+  const topPercent = (topProducer.value / totalValue) * 100;
+  const balance = totalValue - mariValue;
+
+  return (
+    <div className="flex flex-col items-center">
+      <DonutRing percent={percent} color={color} size={64} />
+      <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-foreground/50">{label}</span>
+      <div className="mt-1 text-center text-[10px] leading-tight text-foreground/60">
+        <div>{isMariTop ? "Mari is #1" : `Top: ${topProducer.name} ${topPercent.toFixed(1)}%`}</div>
+        <div>Bal: {fmtWhole(balance)} {unit}</div>
+      </div>
+    </div>
+  );
+}
+
+function ProductionShareKpiTile({
+  data,
+}: {
+  data: typeof MARI_PRODUCTION_SHARE;
+}) {
+  const oilPercent = (data.oil.mariBbl / data.oil.totalBbl) * 100;
+  const gasPercent = (data.gas.mariMmcft / data.gas.totalMmcft) * 100;
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        Mari Production Share
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; wk of {data.periodLabel}</span>
+      </div>
+      <div className="mt-2 flex items-start justify-center gap-4">
+        <ProductionShareStat
+          percent={oilPercent}
+          color="#14963a"
+          label="Oil"
+          unit={data.oil.unit}
+          topProducer={data.oil.topProducer}
+          totalValue={data.oil.totalBbl}
+          mariValue={data.oil.mariBbl}
+        />
+        <ProductionShareStat
+          percent={gasPercent}
+          color="#1ea0eb"
+          label="Gas"
+          unit={data.gas.unit}
+          topProducer={data.gas.topProducer}
+          totalValue={data.gas.totalMmcft}
+          mariValue={data.gas.mariMmcft}
+        />
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: PPIS Upstream Activities &middot; login-gated, updated by hand
       </div>
     </div>
   );
@@ -1138,12 +1238,9 @@ export default function Home() {
         </div>
 
         {/* KPI strip, row 2 — market context + news, LNG import volume still pending (see note
-            above OIL_IMPORTS_LAST_MONTH). Global Oil Benchmarks spans 2 columns since it carries
-            the most content (6 rows) — keeps every tile in both rows the same column width. */}
+            above OIL_IMPORTS_LAST_MONTH). 5 single-column tiles, same width as row 1. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
-          </div>
+          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <ImfProgramTile />
           <NewsTickerTile
             heading="PSX Announcements"
@@ -1159,6 +1256,7 @@ export default function Home() {
             error={ppisNewsError}
             sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
           />
+          <ProductionShareKpiTile data={MARI_PRODUCTION_SHARE} />
         </div>
 
         {showDetails && (
