@@ -140,9 +140,11 @@ const PPIS_NEWS_POLL_INTERVAL_MS = 60 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
-// Power BI "Card" visual look for every KPI tile: flat white fill, a thin hairline border,
-// almost no corner radius, no shadow/elevation — a report-canvas tile, not a web card.
-const KPI_CARD_CLASS = "rounded-sm border border-mari-gray-light bg-white p-3";
+// Power BI "Card" visual look for every KPI tile, refined for a quieter, more elegant finish:
+// flat white fill, a thin hairline border, a restrained 2px navy top accent instead of a loud
+// colored card, almost no corner radius, no shadow/elevation.
+const KPI_CARD_CLASS =
+  "rounded-sm border border-mari-gray-light border-t-2 border-t-mari-navy bg-white p-3";
 
 // Trade debts (receivables) broken down by counterparty, from the "Transactions and balances
 // with related parties" note in Mari Energies' standalone quarterly reports (marienergies.com.pk/
@@ -213,27 +215,27 @@ function OilImportsTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         Pakistan Oil Imports
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {periodLabel}</span>
       </div>
       <div className="mt-2 flex items-end gap-4">
         <div>
-          <div className="text-2xl font-semibold text-mari-green">
+          <div className="text-2xl font-semibold text-mari-navy">
             {fmtKt(totalKt)}
             <span className="ml-1 text-sm font-normal text-foreground/50">kt</span>
           </div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
             Total Petroleum
           </div>
         </div>
         <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />
         <div>
-          <div className="text-2xl font-semibold text-mari-blue">
+          <div className="text-2xl font-semibold text-mari-navy">
             {fmtKt(crudeKt)}
             <span className="ml-1 text-sm font-normal text-foreground/50">kt</span>
           </div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">Crude Oil</div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">Crude Oil</div>
         </div>
       </div>
       <div className="mt-2 text-[10px] text-foreground/40">
@@ -283,7 +285,7 @@ function ImfProgramTile() {
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         Pakistan IMF Program
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
       </div>
@@ -331,7 +333,7 @@ function ImfProgramTile() {
 function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         Global Oil Benchmarks
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/barrel</span>
       </div>
@@ -386,7 +388,7 @@ function NewsTickerTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         {heading}
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {subheading}</span>
       </div>
@@ -514,7 +516,7 @@ function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint 
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         Petrol &amp; HSD
         {currency && unit && (
           <span className="ml-1 font-normal normal-case text-foreground/40">
@@ -525,15 +527,15 @@ function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint 
       <div className="mt-2 flex items-end gap-4">
         {petrol && (
           <div>
-            <div className="text-2xl font-semibold text-mari-green">{petrol.price.toFixed(2)}</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">Petrol</div>
+            <div className="text-2xl font-semibold text-mari-navy">{petrol.price.toFixed(2)}</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">Petrol</div>
           </div>
         )}
         {petrol && hsd && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
         {hsd && (
           <div>
-            <div className="text-2xl font-semibold text-mari-blue">{hsd.price.toFixed(2)}</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">HSD</div>
+            <div className="text-2xl font-semibold text-mari-navy">{hsd.price.toFixed(2)}</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">HSD</div>
           </div>
         )}
       </div>
@@ -554,7 +556,7 @@ function GasComboTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         Gas Benchmark &amp; Incremental
         {periodShort && (
           <span className="ml-1 font-normal normal-case text-foreground/40">({periodShort})</span>
@@ -563,8 +565,8 @@ function GasComboTile({
       <div className="mt-2 flex items-end gap-4">
         {benchmark && (
           <div>
-            <div className="text-2xl font-semibold text-mari-green">{benchmark.value.toFixed(2)}</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+            <div className="text-2xl font-semibold text-mari-navy">{benchmark.value.toFixed(2)}</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
               Benchmark &middot; {benchmark.currency}/{benchmark.unit}
             </div>
           </div>
@@ -572,8 +574,8 @@ function GasComboTile({
         {benchmark && incremental && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
         {incremental && (
           <div>
-            <div className="text-2xl font-semibold text-mari-blue">{incremental.value.toFixed(4)}</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/50">
+            <div className="text-2xl font-semibold text-mari-navy">{incremental.value.toFixed(4)}</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
               Incremental &middot; {incremental.currency}/{incremental.unit}
             </div>
           </div>
@@ -602,7 +604,7 @@ function QuarterReceivablesTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         {quarter}
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {period}</span>
       </div>
@@ -706,7 +708,7 @@ function StatTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">{label}</div>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-mari-navy">
         {value}
         {unit && <span className="ml-1 text-sm font-normal text-foreground/50">{unit}</span>}
@@ -1005,7 +1007,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-mari-gray-bg">
-      <header className="bg-mari-navy">
+      <header className="border-b-2 border-mari-green bg-mari-navy">
         <div className="mx-auto flex max-w-[1800px] items-center gap-4 px-4 py-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-6 w-auto" />
@@ -1033,7 +1035,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className="rounded-sm border border-mari-gray-light bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground/60 transition-colors hover:text-mari-navy"
+            className="rounded-sm border border-mari-gray-light bg-white px-3 py-1 text-xs font-medium uppercase tracking-wider text-foreground/60 transition-colors hover:text-mari-navy"
           >
             {showDetails ? "Hide full report ▲" : "Show full report ▼"}
           </button>
@@ -1184,14 +1186,14 @@ export default function Home() {
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
                   <div className="text-sm font-medium text-foreground/70">Benchmark / Normal Volumes</div>
-                  <div className="mt-1 text-3xl font-semibold text-mari-green">
+                  <div className="mt-1 text-3xl font-semibold text-mari-navy">
                     {lastVerifiedGas.benchmark.currency} {lastVerifiedGas.benchmark.value.toFixed(4)}
                     <span className="ml-1 text-base font-normal text-foreground/60">/{lastVerifiedGas.benchmark.unit}</span>
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-foreground/70">Incremental Volumes</div>
-                  <div className="mt-1 text-3xl font-semibold text-mari-blue">
+                  <div className="mt-1 text-3xl font-semibold text-mari-navy">
                     {lastVerifiedGas.incremental.currency} {lastVerifiedGas.incremental.value.toFixed(4)}
                     <span className="ml-1 text-base font-normal text-foreground/60">/{lastVerifiedGas.incremental.unit}</span>
                   </div>
