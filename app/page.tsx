@@ -419,6 +419,52 @@ function ProductionShareKpiTile({
   );
 }
 
+// NOT a Claude/Mari prediction — a synthesis of publicly published third-party forecasts (EIA
+// STEO, World Bank, Goldman Sachs, JPMorgan) plus current news, framed as bear/base/bull scenario
+// ranges rather than a single point forecast, since oil-price forecasting is inherently uncertain
+// and doubly so amid the active Iran-Hormuz conflict (started Feb 28, 2026; a mid-June ceasefire
+// broke down Jul 8; as of Jul 24, 2026 Iran's IRGC has declared the Strait "completely closed",
+// Brent settled $100.69 on Jul 23, Hormuz transits are ~10/day vs a 120-140/day pre-war norm, and
+// Houthi attacks have opened a second front in the Red Sea). Update by hand periodically by
+// re-reading current news and forecaster updates — there is no API for this.
+const OIL_PRICE_OUTLOOK = {
+  asOfDate: "Jul 24, 2026",
+  horizonLabel: "Aug 2026 - Jan 2027",
+  contextSummary:
+    "Iran-US conflict over the Strait of Hormuz, active since Feb 28, 2026. A mid-June ceasefire (the Islamabad MOU, mediated in part by Pakistan) broke down on Jul 8. As of Jul 24: Hormuz declared \"completely closed\" by Iran's IRGC, Brent at $100.69 (highest since May 22), Hormuz transits ~10/day vs. ~120-140/day normally, and Houthi attacks have opened a second front in the Red Sea.",
+  scenarios: [
+    {
+      case: "Bear",
+      color: "#0ca30c",
+      probability: "~20-25%",
+      brentRange: "USD 70-85/bbl",
+      narrative:
+        "A ceasefire is reached and actually holds this time; Hormuz reopens to near-normal traffic within 1-2 months; OPEC+ keeps adding supply (already +188kb/d from Aug); demand growth stays soft.",
+      sources: "EIA Jul 2026 STEO ($81.91 avg 2026, $64.76 avg 2027) · JPMorgan (2027: $64)",
+    },
+    {
+      case: "Base",
+      color: "#1ea0eb",
+      probability: "~45-50%",
+      brentRange: "USD 90-105/bbl",
+      narrative:
+        "Conflict continues at similar or somewhat lower intensity through Q3; the war-risk premium stays elevated; only a modest easing by Jan 2027. Timing of real de-escalation is genuinely uncertain — the June ceasefire already broke down once within weeks.",
+      sources: "World Bank stressed-scenario range ($95-115) · H2 2026 consensus cited at $89-99.7 · Goldman Sachs 2026 Q4 base ($80, assumes partial Hormuz normalization)",
+    },
+    {
+      case: "Bull (prices higher)",
+      color: "#d03b3b",
+      probability: "~25-30%",
+      brentRange: "USD 105-125/bbl",
+      narrative:
+        "War escalates further or drags on through the full window with no resolution; Hormuz stays effectively closed; further damage to regional energy infrastructure or the new Red Sea front worsens shipping risk. Goldman explicitly flags risk as \"skewed to the upside.\"",
+      sources: "Goldman Sachs (2027: $100 if Hormuz stays disrupted) · tail risk cited up to $166 if the war drags on further",
+    },
+  ],
+  disclaimer:
+    "This is a summary of publicly published third-party forecasts and current news, not a Mari Energies or Claude prediction, model, or investment advice. Oil forecasting is inherently uncertain, especially amid an active regional conflict — treat these as illustrative scenario ranges, not point forecasts, and do not use this for trading or hedging decisions without independent professional advice.",
+};
+
 // Pakistan's IMF EFF + RSF program status, read from IMF press releases (imf.org/en/countries/pak).
 // No live feed exists for this — IMF issues a press release every few months per review, so this is
 // updated by hand whenever a newer review is completed, same pattern as the Mari gas price. The
@@ -821,6 +867,31 @@ function ReceivablesByQuarter() {
         report. SNGPL &amp; SSGCL make up ~90% of the balance — this is sector-wide circular debt, not a
         collections problem specific to Mari.
       </p>
+    </div>
+  );
+}
+
+function OilPriceOutlook() {
+  return (
+    <div>
+      <div className="rounded-sm border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900">
+        <strong className="font-semibold">Not a prediction.</strong> {OIL_PRICE_OUTLOOK.disclaimer}
+      </div>
+      <p className="mt-3 text-xs text-foreground/70">{OIL_PRICE_OUTLOOK.contextSummary}</p>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {OIL_PRICE_OUTLOOK.scenarios.map((s) => (
+          <div key={s.case} className="rounded-sm border border-mari-gray-light border-t-2 bg-white p-3" style={{ borderTopColor: s.color }}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground/70">{s.case}</span>
+              <span className="text-[10px] text-foreground/40">{s.probability}</span>
+            </div>
+            <div className="mt-1 text-lg font-semibold text-mari-navy">{s.brentRange}</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/40">Brent</div>
+            <p className="mt-2 text-xs leading-snug text-foreground/70">{s.narrative}</p>
+            <p className="mt-2 text-[10px] leading-snug text-foreground/40">{s.sources}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1500,6 +1571,14 @@ export default function Home() {
                 SNGPL/SSGCL shown further up this page — different segment, same root cause.
               </p>
             </div>
+          </Panel>
+
+          <Panel
+            title="6-Month Oil Price Outlook"
+            meta={`${OIL_PRICE_OUTLOOK.horizonLabel} · as of ${OIL_PRICE_OUTLOOK.asOfDate} · aggregated from public forecasts, not a live feed`}
+            className="lg:col-span-2"
+          >
+            <OilPriceOutlook />
           </Panel>
         </div>
         </>
