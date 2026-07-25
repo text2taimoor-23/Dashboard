@@ -63,6 +63,7 @@ type MariApiResponse = {
   latestOgraPeriodGroup?: string | null;
   latestMariNotification?: { period: string; pdfUrl: string } | null;
   pdfAvailable?: boolean;
+  ograError?: string | null;
   fetchedAt?: string;
   source?: string;
   error?: string;
@@ -1064,7 +1065,9 @@ export default function Home() {
           return;
         }
 
-        setMariError(null);
+        // A failed OGRA reachability check only degrades the OGRA Notification Status panel —
+        // the manually-verified gas price KPI (data.lastVerified) is unaffected and always set.
+        setMariError(data.ograError ?? null);
         setMari(data);
       } catch {
         if (!cancelled) setMariError("Network error while checking OGRA notifications");

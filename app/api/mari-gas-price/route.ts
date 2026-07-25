@@ -36,6 +36,16 @@ async function isPdfReachable(url: string): Promise<boolean> {
 }
 
 export async function GET() {
+  // The manually-verified benchmark/incremental figures don't depend on OGRA's site being
+  // reachable — only the "latest notification" status check below does. OGRA's server 403s
+  // requests from some hosting providers' IPs (seen from Vercel) even though it works fine from
+  // a residential IP, so that check is isolated in its own try/catch: a scrape failure should only
+  // degrade the OGRA Notification Status panel, not blank out the always-available gas price KPI.
+  let latestPeriodGroup: string | null = null;
+  let latestMari: { period: string; pdfUrl: string } | null = null;
+  let pdfAvailable = false;
+  let ograError: string | null = null;
+
   try {
     const res = await fetch(OGRA_WELLHEAD_PAGE, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; bdc-oil-prices-dashboard/1.0)" },
@@ -47,20 +57,20 @@ export async function GET() {
     }
 
     const html = await res.text();
-    const latestPeriodGroup = extractLatestPeriodGroupLabel(html);
-    const latestMari = extractLatestMariNotification(html);
-    const pdfAvailable = latestMari ? await isPdfReachable(latestMari.pdfUrl) : false;
-
-    return NextResponse.json({
-      lastVerified: LAST_VERIFIED_MARI_PRICE,
-      latestOgraPeriodGroup: latestPeriodGroup,
-      latestMariNotification: latestMari,
-      pdfAvailable,
-      fetchedAt: new Date().toISOString(),
-      source: OGRA_WELLHEAD_PAGE,
-    });
+    latestPeriodGroup = extractLatestPeriodGroupLabel(html);
+    latestMari = extractLatestMariNotification(html);
+    pdfAvailable = latestMari ? await isPdfReachable(latestMari.pdfUrl) : false;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error checking OGRA notifications";
-    return NextResponse.json({ error: message }, { status: 502 });
+    ograError = err instanceof Error ? err.message : "Unknown error checking OGRA notifications";
   }
+
+  return NextResponse.json({
+    lastVerified: LAST_VERIFIED_MARI_PRICE,
+    latestOgraPeriodGroup: latestPeriodGroup,
+    latestMariNotification: latestMari,
+    pdfAvailable,
+    ograError,
+    fetchedAt: new Date().toISOString(),
+    source: OGRA_WELLHEAD_PAGE,
+  });
 }
