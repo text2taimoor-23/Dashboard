@@ -370,6 +370,7 @@ function ProductionShareStat({
         <div className="font-medium text-mari-navy">
           {percent.toFixed(2)}% &middot; {fmtWhole(mariValue)} {unit}
         </div>
+        <div>Total: {fmtWhole(totalValue)} {unit}</div>
         <div>{isMariTop ? "Mari is #1" : `Top: ${topProducer.name} ${topPercent.toFixed(1)}%`}</div>
         <div>Bal: {fmtWhole(balance)} {unit}</div>
       </div>
