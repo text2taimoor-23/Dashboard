@@ -880,7 +880,7 @@ function OilOutlookTrendTile() {
             <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#58595b" }} axisLine={false} tickLine={false} interval={1} />
             <YAxis tick={{ fontSize: 9, fill: "#58595b" }} axisLine={false} tickLine={false} domain={[60, 130]} width={26} />
             <Tooltip
-              formatter={(value: number, name: string) => [`$${value}`, name]}
+              formatter={(value, name) => [`$${value}`, name]}
               contentStyle={{ fontSize: 10, borderRadius: 2, borderColor: "#d3d3d3" }}
             />
             <Line type="monotone" dataKey="bull" name="Bull" stroke="#d03b3b" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
