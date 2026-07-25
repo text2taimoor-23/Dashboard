@@ -367,6 +367,9 @@ function ProductionShareStat({
       <DonutRing percent={percent} color={color} size={64} />
       <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-foreground/50">{label}</span>
       <div className="mt-1 text-center text-[10px] leading-tight text-foreground/60">
+        <div className="font-medium text-mari-navy">
+          {percent.toFixed(2)}% &middot; {fmtWhole(mariValue)} {unit}
+        </div>
         <div>{isMariTop ? "Mari is #1" : `Top: ${topProducer.name} ${topPercent.toFixed(1)}%`}</div>
         <div>Bal: {fmtWhole(balance)} {unit}</div>
       </div>
