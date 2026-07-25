@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type PricePoint = {
   code: string;
@@ -140,16 +140,9 @@ const PPIS_NEWS_POLL_INTERVAL_MS = 60 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
-// Lets every KPI tile pick up the active visual style from one toggle instead of threading a
-// prop through all nine tile components individually.
-const KpiStyleContext = createContext<{ executive: boolean }>({ executive: false });
-
-function kpiCardClass(executive: boolean) {
-  if (!executive) {
-    return "rounded-lg border border-mari-gray-light/60 bg-white p-4";
-  }
-  return "rounded-xl border border-mari-gray-light/30 border-l-4 border-l-mari-navy bg-white p-5 shadow-md ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-lg";
-}
+// Power BI "Card" visual look for every KPI tile: flat white fill, a thin hairline border,
+// almost no corner radius, no shadow/elevation — a report-canvas tile, not a web card.
+const KPI_CARD_CLASS = "rounded-sm border border-mari-gray-light bg-white p-3";
 
 // Trade debts (receivables) broken down by counterparty, from the "Transactions and balances
 // with related parties" note in Mari Energies' standalone quarterly reports (marienergies.com.pk/
@@ -218,9 +211,8 @@ function OilImportsTile({
   crudeKt: number;
   source: string;
 }) {
-  const { executive } = useContext(KpiStyleContext);
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Pakistan Oil Imports
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {periodLabel}</span>
@@ -288,10 +280,9 @@ function ImfProgramTile() {
   const latestTranche = IMF_PROGRAM.effTrancheUsdBn + IMF_PROGRAM.rsfTrancheUsdBn;
   const nextTranche = IMF_PROGRAM.nextReviewEffUsdBn + IMF_PROGRAM.nextReviewRsfUsdBn;
   const disbursedPercent = (IMF_PROGRAM.totalDisbursedUsdBn / IMF_PROGRAM.totalFacilityUsdBn) * 100;
-  const { executive } = useContext(KpiStyleContext);
 
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Pakistan IMF Program
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
@@ -338,9 +329,8 @@ function ImfProgramTile() {
 }
 
 function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
-  const { executive } = useContext(KpiStyleContext);
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Global Oil Benchmarks
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/barrel</span>
@@ -394,9 +384,8 @@ function NewsTickerTile({
   error: string | null;
   sourceNote: string;
 }) {
-  const { executive } = useContext(KpiStyleContext);
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         {heading}
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {subheading}</span>
@@ -440,10 +429,10 @@ function NewsTickerTile({
 function LiveBadge({ isLive }: { isLive: boolean }) {
   if (isLive) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-mari-green/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-mari-green">
-        <span className="relative flex h-2 w-2">
+      <span className="inline-flex items-center gap-1.5 rounded-sm bg-mari-green/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-mari-green">
+        <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mari-green opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-mari-green" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-mari-green" />
         </span>
         Live
       </span>
@@ -451,8 +440,8 @@ function LiveBadge({ isLive }: { isLive: boolean }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-mari-gray-light/40 px-3 py-1 text-xs font-bold uppercase tracking-wide text-foreground/60">
-      <span className="h-2 w-2 rounded-full bg-foreground/40" />
+    <span className="inline-flex items-center gap-1.5 rounded-sm bg-mari-gray-light/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground/60">
+      <span className="h-1.5 w-1.5 rounded-full bg-foreground/40" />
       Offline
     </span>
   );
@@ -473,8 +462,8 @@ function StatusPill({ status, label }: { status: "good" | "warning" | "critical"
   };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${styles[status]}`}>
-      <span className={`h-2 w-2 rounded-full ${dot[status]}`} />
+    <span className={`inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${styles[status]}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dot[status]}`} />
       {label}
     </span>
   );
@@ -505,11 +494,11 @@ function HormuzStatusBadge({ data, error }: { data: HormuzStatusResponse | null;
       target="_blank"
       rel="noreferrer"
       title={tooltipParts.join(" · ")}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+      className={`inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
         isClosed ? "bg-status-critical/10 text-status-critical" : "bg-status-good/10 text-status-good"
       }`}
     >
-      <span className={`h-2 w-2 rounded-full ${isClosed ? "bg-status-critical" : "bg-status-good"}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${isClosed ? "bg-status-critical" : "bg-status-good"}`} />
       Hormuz: {data.status}
       {typeof data.dayCount === "number" && (
         <span className="ml-1 font-normal normal-case text-foreground/50">&middot; Day {data.dayCount}</span>
@@ -522,10 +511,9 @@ function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint 
   if (!petrol && !hsd) return null;
   const unit = petrol?.unit ?? hsd?.unit;
   const currency = petrol?.currency ?? hsd?.currency;
-  const { executive } = useContext(KpiStyleContext);
 
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Petrol &amp; HSD
         {currency && unit && (
@@ -563,10 +551,9 @@ function GasComboTile({
   periodShort?: string;
 }) {
   if (!benchmark && !incremental) return null;
-  const { executive } = useContext(KpiStyleContext);
 
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         Gas Benchmark &amp; Incremental
         {periodShort && (
@@ -613,9 +600,8 @@ function QuarterReceivablesTile({
   others: number;
   total: number;
 }) {
-  const { executive } = useContext(KpiStyleContext);
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
         {quarter}
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {period}</span>
@@ -685,13 +671,13 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={`flex flex-col rounded-lg border border-mari-gray-light/60 bg-white p-6 shadow-sm ${className ?? ""}`}>
+    <div className={`flex flex-col rounded-sm border border-mari-gray-light bg-white p-4 ${className ?? ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold tracking-tight text-mari-navy">{title}</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-mari-navy">{title}</h2>
         {badge}
       </div>
       {meta && <div className="mt-1 text-xs text-foreground/50">{meta}</div>}
-      <div className="mt-4 flex-1">{children}</div>
+      <div className="mt-3 flex-1">{children}</div>
     </div>
   );
 }
@@ -717,10 +703,9 @@ function StatTile({
   const isDown = direction === "down";
   const deltaColor = isUp ? "text-status-good" : isDown ? "text-status-critical" : "text-foreground/50";
   const arrow = isUp ? "▲" : isDown ? "▼" : "—";
-  const { executive } = useContext(KpiStyleContext);
 
   return (
-    <div className={kpiCardClass(executive)}>
+    <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-semibold uppercase tracking-wide text-foreground/60">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-mari-navy">
         {value}
@@ -766,7 +751,6 @@ export default function Home() {
   const [ppisNews, setPpisNews] = useState<PpisNewsResponse | null>(null);
   const [ppisNewsError, setPpisNewsError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
-  const [executiveStyle, setExecutiveStyle] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
@@ -1022,21 +1006,21 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-mari-gray-bg">
       <header className="bg-mari-navy">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-4">
+        <div className="mx-auto flex max-w-[1800px] items-center gap-4 px-4 py-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-9 w-auto" />
-          <div className="h-6 w-px bg-white/20" />
-          <span className="text-sm font-bold uppercase tracking-wide text-white/90">
+          <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-6 w-auto" />
+          <div className="h-4 w-px bg-white/20" />
+          <span className="text-xs font-bold uppercase tracking-wide text-white/90">
             Fuel &amp; Gas Price Dashboard
           </span>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
+      <main className="mx-auto w-full max-w-[1800px] flex-1 px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-mari-navy">Overview</h1>
-            <p className="mt-1 text-sm text-foreground/70">{today}</p>
+            <h1 className="text-base font-semibold tracking-tight text-mari-navy">Overview</h1>
+            <p className="text-xs text-foreground/70">{today}</p>
           </div>
           <div className="flex items-center gap-2">
             <HormuzStatusBadge data={hormuzStatus} error={hormuzStatusError} />
@@ -1044,93 +1028,71 @@ export default function Home() {
           </div>
         </div>
 
-        {/* View controls — style toggle for the KPI tiles, and a show/hide for everything below them */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
-          <div className="inline-flex rounded-full border border-mari-gray-light/60 bg-white p-0.5">
-            <button
-              type="button"
-              onClick={() => setExecutiveStyle(false)}
-              className={`rounded-full px-3 py-1 font-semibold uppercase tracking-wide transition-colors ${
-                !executiveStyle ? "bg-mari-navy text-white" : "text-foreground/60 hover:text-mari-navy"
-              }`}
-            >
-              Classic
-            </button>
-            <button
-              type="button"
-              onClick={() => setExecutiveStyle(true)}
-              className={`rounded-full px-3 py-1 font-semibold uppercase tracking-wide transition-colors ${
-                executiveStyle ? "bg-mari-navy text-white" : "text-foreground/60 hover:text-mari-navy"
-              }`}
-            >
-              Executive
-            </button>
-          </div>
+        {/* View controls — show/hide for everything below the KPI strip */}
+        <div className="mt-3 flex justify-end">
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className="rounded-full border border-mari-gray-light/60 bg-white px-3 py-1.5 font-semibold uppercase tracking-wide text-foreground/60 transition-colors hover:text-mari-navy"
+            className="rounded-sm border border-mari-gray-light bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground/60 transition-colors hover:text-mari-navy"
           >
             {showDetails ? "Hide full report ▲" : "Show full report ▼"}
           </button>
         </div>
 
-        <KpiStyleContext.Provider value={{ executive: executiveStyle }}>
-          {/* KPI strip, row 1 — core price/financial stats at a glance */}
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <FuelComboTile petrol={petrol} hsd={hsd} />
-            <GasComboTile
-              benchmark={lastVerifiedGas?.benchmark}
-              incremental={lastVerifiedGas?.incremental}
-              periodShort={lastVerifiedGas?.periodShort}
+        {/* KPI strip, row 1 — core price/financial stats at a glance */}
+        <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
+          <FuelComboTile petrol={petrol} hsd={hsd} />
+          <GasComboTile
+            benchmark={lastVerifiedGas?.benchmark}
+            incremental={lastVerifiedGas?.incremental}
+            periodShort={lastVerifiedGas?.periodShort}
+          />
+          {typeof mariShare?.price === "number" && (
+            <StatTile
+              label="MARI Share (PSX)"
+              value={`${mariShare.currency ?? "PKR"} ${mariShare.price.toFixed(2)}`}
+              delta={mariShare.change}
+              deltaPercent={mariShare.changePercent}
+              direction={mariShare.direction}
+              caption={
+                typeof mariShare.marketCapPkrBn === "number"
+                  ? `Market Cap: PKR ${mariShare.marketCapPkrBn.toFixed(1)}bn`
+                  : undefined
+              }
             />
-            {typeof mariShare?.price === "number" && (
-              <StatTile
-                label="MARI Share (PSX)"
-                value={`${mariShare.currency ?? "PKR"} ${mariShare.price.toFixed(2)}`}
-                delta={mariShare.change}
-                deltaPercent={mariShare.changePercent}
-                direction={mariShare.direction}
-                caption={
-                  typeof mariShare.marketCapPkrBn === "number"
-                    ? `Market Cap: PKR ${mariShare.marketCapPkrBn.toFixed(1)}bn`
-                    : undefined
-                }
-              />
-            )}
-            <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
-            <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
-          </div>
+          )}
+          <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
+          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
+        </div>
 
-          {/* KPI strip, row 2 — market context + news, LNG import volume still pending (see note
-              above OIL_IMPORTS_LAST_MONTH). Global Oil Benchmarks spans 2 columns since it carries
-              the most content (6 rows) — keeps every tile in both rows the same column width. */}
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
-            </div>
-            <ImfProgramTile />
-            <NewsTickerTile
-              heading="PSX Announcements"
-              subheading="Mari Updates"
-              items={psxAnnouncements?.announcements}
-              error={psxAnnouncementsError}
-              sourceNote="Source: PSX Data Portal (dps.psx.com.pk) · refreshed hourly, spans the 9:30am & 3:30pm market updates"
-            />
-            <NewsTickerTile
-              heading="PPIS Sector News"
-              subheading="E&P Sector Updates"
-              items={ppisNews?.news}
-              error={ppisNewsError}
-              sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
-            />
+        {/* KPI strip, row 2 — market context + news, LNG import volume still pending (see note
+            above OIL_IMPORTS_LAST_MONTH). Global Oil Benchmarks spans 2 columns since it carries
+            the most content (6 rows) — keeps every tile in both rows the same column width. */}
+        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           </div>
-        </KpiStyleContext.Provider>
+          <ImfProgramTile />
+          <NewsTickerTile
+            heading="PSX Announcements"
+            subheading="Mari Updates"
+            items={psxAnnouncements?.announcements}
+            error={psxAnnouncementsError}
+            sourceNote="Source: PSX Data Portal (dps.psx.com.pk) · refreshed hourly, spans the 9:30am & 3:30pm market updates"
+          />
+          <NewsTickerTile
+            heading="PPIS Sector News"
+            subheading="E&P Sector Updates"
+            items={ppisNews?.news}
+            error={ppisNewsError}
+            sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
+          />
+        </div>
 
         {showDetails && (
         <>
         {/* Trade receivables by counterparty */}
-        <div className="mt-6">
+        <div className="mt-2">
           <Panel
             title="Mari Trade Receivables by Counterparty"
             meta="From quarterly financial reports (FY2025-26)"
@@ -1140,7 +1102,7 @@ export default function Home() {
         </div>
 
         {/* Detail panels */}
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="mt-2 grid grid-cols-1 gap-1 lg:grid-cols-2">
           <Panel
             title="PSO Retail Fuel Prices"
             badge={<LiveBadge isLive={!error && prices.length > 0} />}
@@ -1344,8 +1306,8 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="mt-10 bg-mari-gray-light/40">
-        <div className="mx-auto max-w-7xl px-6 py-4 text-xs text-foreground/70">
+      <footer className="mt-4 bg-mari-gray-light/40">
+        <div className="mx-auto max-w-[1800px] px-4 py-2 text-xs text-foreground/70">
           &copy; {new Date().getUTCFullYear()} Mari Energies Limited &mdash; internal fuel &amp; gas price monitoring
         </div>
       </footer>
