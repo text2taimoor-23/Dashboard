@@ -690,6 +690,15 @@ function HormuzStatusBadge({ data, error }: { data: HormuzStatusResponse | null;
     tooltipParts.push(`War-risk ${data.warRiskMultiplier.toFixed(1)}x normal`);
   }
   if (data.asOf) tooltipParts.push(`Updated ${data.asOf}`);
+  // The source's "Day N" counts from the original Feb 28, 2026 closure declaration, not
+  // consecutive days closed — the Strait actually reopened for ~3 weeks (the Islamabad MOU
+  // ceasefire, ~Jun 17-Jul 8) before closing again. Made explicit here since "Day N" alone reads
+  // as an unbroken streak.
+  if (typeof data.dayCount === "number") {
+    tooltipParts.push(
+      "Day count runs from the original Feb 28, 2026 closure declaration, not a continuous streak — a ceasefire (the Islamabad MOU) reopened the Strait for ~3 weeks (~Jun 17-Jul 8, 2026) before it closed again"
+    );
+  }
   if (error) tooltipParts.push(error);
 
   return (
@@ -705,7 +714,7 @@ function HormuzStatusBadge({ data, error }: { data: HormuzStatusResponse | null;
       <span className={`h-1.5 w-1.5 rounded-full ${isClosed ? "bg-status-critical" : "bg-status-good"}`} />
       Hormuz: {data.status}
       {typeof data.dayCount === "number" && (
-        <span className="ml-1 font-normal normal-case text-foreground/50">&middot; Day {data.dayCount}</span>
+        <span className="ml-1 font-normal normal-case text-foreground/50">&middot; Day {data.dayCount}*</span>
       )}
     </a>
   );
