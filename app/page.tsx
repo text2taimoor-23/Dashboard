@@ -1275,7 +1275,7 @@ export default function Home() {
           <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-6 w-auto" />
           <div className="h-4 w-px bg-white/20" />
           <span className="text-xs font-bold uppercase tracking-wide text-white/90">
-            Fuel &amp; Gas Price Dashboard
+            BDC Dashboard
           </span>
         </div>
       </header>
