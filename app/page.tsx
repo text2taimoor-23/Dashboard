@@ -1701,20 +1701,20 @@ export default function Home() {
         </div>
 
         {/* KPI strip, row 2 — per the same ordering request: Global Oil Price, Price Outlook,
-            Petrol & HSD, PPIS Sector News, then Receivables (swapped in from row 1's former
-            PSX Announcements slot). */}
+            Petrol & HSD, then Receivables (swapped in from row 1's former PSX Announcements
+            slot), then PPIS Sector News — positions 4 and 5 swapped per a follow-up request. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <OilOutlookTrendTile />
           <FuelComboTile petrol={petrol} hsd={hsd} pkrPerUsd={pkrUsd?.pkrPerUsd} />
+          <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
           <NewsTickerTile
-            heading="PPIS Sector News"
-            subheading="E&P Updates"
+            heading="E&P Updates"
+            subheading="PPIS Sector News"
             items={ppisNews?.news}
             error={ppisNewsError}
             sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
           />
-          <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
         </div>
 
         {/* KPI strip, row 3 — the remaining tiles not named in the user's explicit ordering:
