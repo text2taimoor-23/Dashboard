@@ -60,6 +60,7 @@ type MariApiResponse = {
     incremental: MariPriceFigure;
     reference: string;
   };
+  nextPeriod?: { periodShort: string; notified: boolean } | null;
   latestOgraPeriodGroup?: string | null;
   latestMariNotification?: { period: string; pdfUrl: string } | null;
   pdfAvailable?: boolean;
@@ -663,6 +664,15 @@ function StatusPill({ status, label }: { status: "good" | "warning" | "critical"
   );
 }
 
+function PendingBadge() {
+  return (
+    <span className="inline-flex animate-pulse items-center gap-1.5 rounded-sm bg-status-warning/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+      <span className="h-1.5 w-1.5 rounded-full bg-status-warning" />
+      Pending
+    </span>
+  );
+}
+
 function HormuzStatusBadge({ data, error }: { data: HormuzStatusResponse | null; error: string | null }) {
   if (!data?.status) return null;
   const isClosed = data.status === "closed";
@@ -739,10 +749,16 @@ function GasComboTile({
   benchmark,
   incremental,
   periodShort,
+  nextPeriodShort,
+  nextPeriodNotified,
+  nextPeriodPdfUrl,
 }: {
   benchmark?: MariPriceFigure;
   incremental?: MariPriceFigure;
   periodShort?: string;
+  nextPeriodShort?: string;
+  nextPeriodNotified?: boolean;
+  nextPeriodPdfUrl?: string | null;
 }) {
   if (!benchmark && !incremental) return null;
 
@@ -750,28 +766,53 @@ function GasComboTile({
     <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         Gas Benchmark &amp; Incremental
-        {periodShort && (
-          <span className="ml-1 font-normal normal-case text-foreground/40">({periodShort})</span>
-        )}
       </div>
-      <div className="mt-2 flex items-end gap-4">
-        {benchmark && (
-          <div>
-            <div className="text-2xl font-semibold text-mari-navy">{benchmark.value.toFixed(2)}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
-              Benchmark &middot; {benchmark.currency}/{benchmark.unit}
+
+      {/* Box 1 — upcoming half-year period, checked against OGRA's live listing until notified */}
+      <div className="mt-2 rounded-sm bg-mari-gray-light/20 px-2 py-1.5">
+        <div className="text-[9px] font-medium uppercase tracking-wider text-foreground/40">Upcoming Period</div>
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">
+            {nextPeriodShort ?? "Next Period"}
+          </span>
+          {nextPeriodNotified ? (
+            nextPeriodPdfUrl ? (
+              <a href={nextPeriodPdfUrl} target="_blank" rel="noreferrer" className="inline-flex">
+                <StatusPill status="good" label="Notified" />
+              </a>
+            ) : (
+              <StatusPill status="good" label="Notified" />
+            )
+          ) : (
+            <PendingBadge />
+          )}
+        </div>
+      </div>
+
+      {/* Box 2 — last verified (currently notified) half-year period */}
+      <div className="mt-2">
+        <div className="text-[9px] font-medium uppercase tracking-wider text-foreground/40">
+          Notified Period{periodShort && ` (${periodShort})`}
+        </div>
+        <div className="mt-0.5 flex items-end gap-4">
+          {benchmark && (
+            <div>
+              <div className="text-2xl font-semibold text-mari-navy">{benchmark.value.toFixed(2)}</div>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
+                Benchmark &middot; {benchmark.currency}/{benchmark.unit}
+              </div>
             </div>
-          </div>
-        )}
-        {benchmark && incremental && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
-        {incremental && (
-          <div>
-            <div className="text-2xl font-semibold text-mari-navy">{incremental.value.toFixed(4)}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
-              Incremental &middot; {incremental.currency}/{incremental.unit}
+          )}
+          {benchmark && incremental && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
+          {incremental && (
+            <div>
+              <div className="text-2xl font-semibold text-mari-navy">{incremental.value.toFixed(4)}</div>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
+                Incremental &middot; {incremental.currency}/{incremental.unit}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1310,6 +1351,9 @@ export default function Home() {
             benchmark={lastVerifiedGas?.benchmark}
             incremental={lastVerifiedGas?.incremental}
             periodShort={lastVerifiedGas?.periodShort}
+            nextPeriodShort={mari?.nextPeriod?.periodShort}
+            nextPeriodNotified={mari?.nextPeriod?.notified}
+            nextPeriodPdfUrl={mari?.nextPeriod?.notified ? mari?.latestMariNotification?.pdfUrl : null}
           />
           {typeof mariShare?.price === "number" && (
             <StatTile
