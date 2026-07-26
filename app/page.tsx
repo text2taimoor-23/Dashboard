@@ -1111,7 +1111,7 @@ function QuarterReceivablesTile({
       <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
         MariEnergies Receivables
         <span className="ml-1 font-normal normal-case text-foreground/40">
-          &middot; {quarter} &middot; {period}
+          &middot; {quarter} &middot; {period} &middot; PKR mn
         </span>
       </div>
       <div className="mt-2 space-y-1 text-sm">
@@ -1134,7 +1134,10 @@ function QuarterReceivablesTile({
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-sm">
         <span className="font-semibold text-foreground/70">Total</span>
-        <span className="font-semibold text-mari-green">{fmtMn(total)}</span>
+        <span className="font-semibold text-mari-green">
+          {fmtMn(total)}
+          <span className="ml-1 text-[10px] font-normal text-foreground/40">PKR mn</span>
+        </span>
       </div>
     </div>
   );
@@ -1649,9 +1652,10 @@ export default function Home() {
           </button>
         </div>
 
-        {/* KPI strip, row 1 — per the user's explicit 2026-07-27 ordering request: Mari Share
-            Price, Price Notification (Mari Field Gas Price), Production Share, Drilling Activity,
-            Receivables. */}
+        {/* KPI strip, row 1 — per the user's explicit 2026-07-27 ordering request (Mari Share
+            Price, Price Notification / Mari Field Gas Price, Production Share, Drilling Activity),
+            with Receivables then swapped out for PSX Announcements per a follow-up request the
+            same day — Receivables moved to row 2's former PSX Announcements slot instead. */}
         <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           {typeof mariShare?.price === "number" && (
             <StatTile
@@ -1687,13 +1691,6 @@ export default function Home() {
           />
           <ProductionShareKpiTile data={MARI_PRODUCTION_SHARE} />
           <DrillingActivityKpiTile data={MARI_DRILLING_ACTIVITY} />
-          <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
-        </div>
-
-        {/* KPI strip, row 2 — per the same ordering request: PSX Announcements, Global Oil Price,
-            Price Outlook, then Petrol & HSD and PPIS Sector News (not explicitly named by the
-            user, slotted in here as the closest-fitting external-market/news tiles). */}
-        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <NewsTickerTile
             heading="PSX Announcements"
             subheading="Mari Updates"
@@ -1701,16 +1698,23 @@ export default function Home() {
             error={psxAnnouncementsError}
             sourceNote="Source: PSX Data Portal (dps.psx.com.pk) · refreshed hourly, spans the 9:30am & 3:30pm market updates"
           />
+        </div>
+
+        {/* KPI strip, row 2 — per the same ordering request: Global Oil Price, Price Outlook,
+            Petrol & HSD, PPIS Sector News, then Receivables (swapped in from row 1's former
+            PSX Announcements slot). */}
+        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <OilOutlookTrendTile />
           <FuelComboTile petrol={petrol} hsd={hsd} pkrPerUsd={pkrUsd?.pkrPerUsd} />
           <NewsTickerTile
             heading="PPIS Sector News"
-            subheading="E&P Sector Updates"
+            subheading="E&P Updates"
             items={ppisNews?.news}
             error={ppisNewsError}
             sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
           />
+          <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
         </div>
 
         {/* KPI strip, row 3 — the remaining tiles not named in the user's explicit ordering:
