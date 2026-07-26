@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
+/* Pulled directly from marienergies.com.pk's own numbered utility classes (.bg-blue1..14,
+   .bg-green1..8, .bg-grey1..7, .bg-red1, .bg-yellow1) rather than approximated by eye — see the
+   "Mari brand color scheme" note in CLAUDE.md for how these were sourced (2026-07-27). */
 :root {
   --background: #ffffff;
-  --foreground: #58595b;
-  --mari-navy: #051321;
-  --mari-green: #14963a;
-  --mari-blue: #1ea0eb;
-  --mari-gray-light: #d3d3d3;
-  --mari-gray-bg: #f5f6f7;
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-critical: #d03b3b;
+  --foreground: #58595b; /* .bg-grey2 / body text on marienergies.com.pk */
+  --mari-navy: #18488c; /* .bg-blue1 — their primary chrome color: nav, category badges, pagination */
+  --mari-green: #10b346; /* .bg-green4 — their active/brand accent green (e.g. currency switcher) */
+  --mari-blue: #1e84bc; /* .bg-blue5 — their secondary accent blue (e.g. back-to-top button) */
+  --mari-gray-light: #c6ced7; /* .bg-grey7 */
+  --mari-gray-bg: #f9f9f9; /* .bg-grey5 */
+  --status-good: #10b346; /* .bg-green4, reused — no separate "positive" swatch on their site */
+  --status-warning: #fabd3a; /* .bg-yellow1 */
+  --status-critical: #de3f39; /* .bg-red1 */
 }
 
 @theme inline {

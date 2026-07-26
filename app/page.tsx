@@ -385,7 +385,7 @@ function DonutRing({ percent, color, size }: { percent: number; color: string; s
             isAnimationActive={false}
           >
             <Cell fill={color} />
-            <Cell fill="#d3d3d3" />
+            <Cell fill="#c6ced7" />
           </Pie>
         </PieChart>
       </ResponsiveContainer>
@@ -483,7 +483,7 @@ function ProductionShareKpiTile({
       <div className="mt-2 flex items-start justify-center gap-4">
         <ProductionShareStat
           percent={oilPercent}
-          color="#14963a"
+          color="#10b346"
           label="Oil"
           unit={data.oil.unit}
           topProducer={data.oil.topProducer}
@@ -492,7 +492,7 @@ function ProductionShareKpiTile({
         />
         <ProductionShareStat
           percent={gasPercent}
-          color="#1ea0eb"
+          color="#1e84bc"
           label="Gas"
           unit={data.gas.unit}
           topProducer={data.gas.topProducer}
@@ -643,7 +643,7 @@ const OIL_PRICE_OUTLOOK = {
   scenarios: [
     {
       case: "Bear",
-      color: "#0ca30c",
+      color: "#10b346",
       probability: "~20-25%",
       brentRange: "USD 70-85/bbl",
       narrative:
@@ -652,7 +652,7 @@ const OIL_PRICE_OUTLOOK = {
     },
     {
       case: "Base",
-      color: "#1ea0eb",
+      color: "#1e84bc",
       probability: "~45-50%",
       brentRange: "USD 90-105/bbl",
       narrative:
@@ -661,7 +661,7 @@ const OIL_PRICE_OUTLOOK = {
     },
     {
       case: "Bull (prices higher)",
-      color: "#d03b3b",
+      color: "#de3f39",
       probability: "~25-30%",
       brentRange: "USD 105-125/bbl",
       narrative:
@@ -1036,7 +1036,7 @@ function GasComboTile({
   return (
     <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
-        Gas Benchmark &amp; Incremental
+        Mari Field Gas Price
       </div>
 
       {/* Box 1 — upcoming half-year period, checked against OGRA's live listing until notified */}
@@ -1109,8 +1109,10 @@ function QuarterReceivablesTile({
   return (
     <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
-        {quarter}
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {period}</span>
+        MariEnergies Receivables
+        <span className="ml-1 font-normal normal-case text-foreground/40">
+          &middot; {quarter} &middot; {period}
+        </span>
       </div>
       <div className="mt-2 space-y-1 text-sm">
         <div className="flex items-center justify-between">
@@ -1194,11 +1196,11 @@ function OilOutlookTrendTile() {
             <YAxis tick={{ fontSize: 9, fill: "#58595b" }} axisLine={false} tickLine={false} domain={[60, 130]} width={26} />
             <Tooltip
               formatter={(value, name) => [`$${value}`, name]}
-              contentStyle={{ fontSize: 10, borderRadius: 2, borderColor: "#d3d3d3" }}
+              contentStyle={{ fontSize: 10, borderRadius: 2, borderColor: "#c6ced7" }}
             />
-            <Line type="monotone" dataKey="bull" name="Bull" stroke="#d03b3b" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="base" name="Base" stroke="#1ea0eb" strokeWidth={2} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="bear" name="Bear" stroke="#0ca30c" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="bull" name="Bull" stroke="#de3f39" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="base" name="Base" stroke="#1e84bc" strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="bear" name="Bear" stroke="#10b346" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -1647,9 +1649,10 @@ export default function Home() {
           </button>
         </div>
 
-        {/* KPI strip, row 1 — Mari's own performance first (what management cares about most):
-            share price, wellhead gas price, production vs national share, receivables, company
-            news — in that order. */}
+        {/* KPI strip, row 1 — Mari's financial performance & corporate standing (what management
+            scans first): share price + dividend, receivables exposure, reserves position, capital
+            efficiency, then the corporate news that explains moves in those numbers. Dividend
+            yield lives in the MARI Share tile's caption rather than a standalone tile. */}
         <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           {typeof mariShare?.price === "number" && (
             <StatTile
@@ -1675,16 +1678,9 @@ export default function Home() {
               }
             />
           )}
-          <GasComboTile
-            benchmark={lastVerifiedGas?.benchmark}
-            incremental={lastVerifiedGas?.incremental}
-            periodShort={lastVerifiedGas?.periodShort}
-            nextPeriodShort={mari?.nextPeriod?.periodShort}
-            nextPeriodNotified={mari?.nextPeriod?.notified}
-            nextPeriodPdfUrl={mari?.nextPeriod?.notified ? mari?.latestMariNotification?.pdfUrl : null}
-          />
-          <ProductionShareKpiTile data={MARI_PRODUCTION_SHARE} />
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
+          <ReservesKpiTile data={MARI_RESERVES} />
+          <FindingCostKpiTile data={MARI_FINDING_COST} />
           <NewsTickerTile
             heading="PSX Announcements"
             subheading="Mari Updates"
@@ -1694,16 +1690,21 @@ export default function Home() {
           />
         </div>
 
-        {/* KPI strip, row 2 — external market & sector context: forward outlook, global
-            benchmarks, national imports, retail fuel, sector news, and Pakistan's IMF program
-            status (country-level macro context, re-added at the user's request alongside — not
-            instead of — the Oil Outlook tile). LNG import volume still pending (see note above
-            OIL_IMPORTS_LAST_MONTH). */}
+        {/* KPI strip, row 2 — Mari's operational performance: the regulated wellhead price,
+            production vs. the national field, current drilling activity, then the sector-wide
+            E&P news that provides context for all three (new discoveries, licence changes,
+            competitor activity). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <OilOutlookTrendTile />
-          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
-          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
-          <FuelComboTile petrol={petrol} hsd={hsd} pkrPerUsd={pkrUsd?.pkrPerUsd} />
+          <GasComboTile
+            benchmark={lastVerifiedGas?.benchmark}
+            incremental={lastVerifiedGas?.incremental}
+            periodShort={lastVerifiedGas?.periodShort}
+            nextPeriodShort={mari?.nextPeriod?.periodShort}
+            nextPeriodNotified={mari?.nextPeriod?.notified}
+            nextPeriodPdfUrl={mari?.nextPeriod?.notified ? mari?.latestMariNotification?.pdfUrl : null}
+          />
+          <ProductionShareKpiTile data={MARI_PRODUCTION_SHARE} />
+          <DrillingActivityKpiTile data={MARI_DRILLING_ACTIVITY} />
           <NewsTickerTile
             heading="PPIS Sector News"
             subheading="E&P Sector Updates"
@@ -1711,18 +1712,18 @@ export default function Home() {
             error={ppisNewsError}
             sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
           />
-          <ImfProgramTile />
         </div>
 
-        {/* KPI strip, row 3 — financial/operational depth: reserves position, current drilling
-            activity, and finding cost (all Mari-specific; reserves/finding cost from the annual
-            Integrated Annual Report, drilling activity from PPIS's login-gated Drilling Status
-            report). Dividend yield is merged into the MARI Share tile's caption, and PKR/USD into
-            the Petrol & HSD tile's footer, rather than standalone tiles here. */}
+        {/* KPI strip, row 3 — external market & macro context, last since it's backdrop rather
+            than Mari's own numbers: forward oil outlook, global benchmarks, national imports,
+            retail fuel (+ PKR/USD footer), and Pakistan's IMF program status. LNG import volume
+            still pending (see note above OIL_IMPORTS_LAST_MONTH). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <ReservesKpiTile data={MARI_RESERVES} />
-          <DrillingActivityKpiTile data={MARI_DRILLING_ACTIVITY} />
-          <FindingCostKpiTile data={MARI_FINDING_COST} />
+          <OilOutlookTrendTile />
+          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
+          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
+          <FuelComboTile petrol={petrol} hsd={hsd} pkrPerUsd={pkrUsd?.pkrPerUsd} />
+          <ImfProgramTile />
         </div>
 
         {showDetails && (
@@ -1884,14 +1885,14 @@ export default function Home() {
                 mariValue={MARI_PRODUCTION_SHARE.oil.mariBbl}
                 totalValue={MARI_PRODUCTION_SHARE.oil.totalBbl}
                 unit={MARI_PRODUCTION_SHARE.oil.unit}
-                color="#14963a"
+                color="#10b346"
               />
               <ProductionShareDonut
                 label="Gas"
                 mariValue={MARI_PRODUCTION_SHARE.gas.mariMmcft}
                 totalValue={MARI_PRODUCTION_SHARE.gas.totalMmcft}
                 unit={MARI_PRODUCTION_SHARE.gas.unit}
-                color="#1ea0eb"
+                color="#1e84bc"
               />
             </div>
             <p className="mt-3 text-xs text-foreground/50">
@@ -1978,7 +1979,7 @@ export default function Home() {
 
       <footer className="mt-4 bg-mari-gray-light/40">
         <div className="mx-auto max-w-[1800px] px-4 py-2 text-xs text-foreground/70">
-          &copy; {new Date().getUTCFullYear()} Mari Energies Limited &mdash; internal fuel &amp; gas price monitoring
+          &copy; {new Date().getUTCFullYear()} MariEnergies BDC Department Internal Dashboard
         </div>
       </footer>
     </div>
