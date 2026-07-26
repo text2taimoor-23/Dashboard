@@ -1649,10 +1649,12 @@ export default function Home() {
           </button>
         </div>
 
-        {/* KPI strip, row 1 — Mari's financial performance & corporate standing (what management
-            scans first): share price + dividend, receivables exposure, reserves position, capital
-            efficiency, then the corporate news that explains moves in those numbers. Dividend
-            yield lives in the MARI Share tile's caption rather than a standalone tile. */}
+        {/* KPI strip, row 1 — Mari's financial performance & corporate standing. Live/current
+            data leads (share price polls every 5 min; PSX Announcements refresh hourly), fixed-
+            point annual snapshots (Reserves & Resources, Finding & Development Cost — both dated
+            to a single fiscal-year-end and only updated once a year) trail at the end. Receivables
+            is deliberately NOT reordered by this live/past logic — it stays in its existing slot
+            per the user's explicit instruction, even though it's also a quarterly snapshot. */}
         <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           {typeof mariShare?.price === "number" && (
             <StatTile
@@ -1679,8 +1681,6 @@ export default function Home() {
             />
           )}
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
-          <ReservesKpiTile data={MARI_RESERVES} />
-          <FindingCostKpiTile data={MARI_FINDING_COST} />
           <NewsTickerTile
             heading="PSX Announcements"
             subheading="Mari Updates"
@@ -1688,6 +1688,8 @@ export default function Home() {
             error={psxAnnouncementsError}
             sourceNote="Source: PSX Data Portal (dps.psx.com.pk) · refreshed hourly, spans the 9:30am & 3:30pm market updates"
           />
+          <ReservesKpiTile data={MARI_RESERVES} />
+          <FindingCostKpiTile data={MARI_FINDING_COST} />
         </div>
 
         {/* KPI strip, row 2 — Mari's operational performance: the regulated wellhead price,
@@ -1715,14 +1717,17 @@ export default function Home() {
         </div>
 
         {/* KPI strip, row 3 — external market & macro context, last since it's backdrop rather
-            than Mari's own numbers: forward oil outlook, global benchmarks, national imports,
-            retail fuel (+ PKR/USD footer), and Pakistan's IMF program status. LNG import volume
-            still pending (see note above OIL_IMPORTS_LAST_MONTH). */}
+            than Mari's own numbers. Within the row, actively-polled live prices lead (Global Oil
+            Benchmarks every 30 min, Petrol & HSD + PKR/USD every 5 min / 6h), the periodically
+            hand-refreshed forward outlook comes next, and the two laggier/stalest figures trail at
+            the end — Pakistan Oil Imports (OCAC's own ~1-month reporting lag) and the IMF Program
+            (only updates once per review, months apart). LNG import volume still pending (see note
+            above OIL_IMPORTS_LAST_MONTH). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <OilOutlookTrendTile />
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
-          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <FuelComboTile petrol={petrol} hsd={hsd} pkrPerUsd={pkrUsd?.pkrPerUsd} />
+          <OilOutlookTrendTile />
+          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <ImfProgramTile />
         </div>
 
