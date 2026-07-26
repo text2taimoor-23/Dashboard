@@ -1353,17 +1353,10 @@ export default function Home() {
           </button>
         </div>
 
-        {/* KPI strip, row 1 — core price/financial stats at a glance */}
+        {/* KPI strip, row 1 — Mari's own performance first (what management cares about most):
+            share price, wellhead gas price, production vs national share, receivables, company
+            news — in that order. */}
         <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <FuelComboTile petrol={petrol} hsd={hsd} />
-          <GasComboTile
-            benchmark={lastVerifiedGas?.benchmark}
-            incremental={lastVerifiedGas?.incremental}
-            periodShort={lastVerifiedGas?.periodShort}
-            nextPeriodShort={mari?.nextPeriod?.periodShort}
-            nextPeriodNotified={mari?.nextPeriod?.notified}
-            nextPeriodPdfUrl={mari?.nextPeriod?.notified ? mari?.latestMariNotification?.pdfUrl : null}
-          />
           {typeof mariShare?.price === "number" && (
             <StatTile
               label="MARI Share (PSX)"
@@ -1378,15 +1371,16 @@ export default function Home() {
               }
             />
           )}
+          <GasComboTile
+            benchmark={lastVerifiedGas?.benchmark}
+            incremental={lastVerifiedGas?.incremental}
+            periodShort={lastVerifiedGas?.periodShort}
+            nextPeriodShort={mari?.nextPeriod?.periodShort}
+            nextPeriodNotified={mari?.nextPeriod?.notified}
+            nextPeriodPdfUrl={mari?.nextPeriod?.notified ? mari?.latestMariNotification?.pdfUrl : null}
+          />
+          <ProductionShareKpiTile data={MARI_PRODUCTION_SHARE} />
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
-          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
-        </div>
-
-        {/* KPI strip, row 2 — market context + news, LNG import volume still pending (see note
-            above OIL_IMPORTS_LAST_MONTH). 5 single-column tiles, same width as row 1. */}
-        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
-          <OilOutlookTrendTile />
           <NewsTickerTile
             heading="PSX Announcements"
             subheading="Mari Updates"
@@ -1394,6 +1388,16 @@ export default function Home() {
             error={psxAnnouncementsError}
             sourceNote="Source: PSX Data Portal (dps.psx.com.pk) · refreshed hourly, spans the 9:30am & 3:30pm market updates"
           />
+        </div>
+
+        {/* KPI strip, row 2 — external market & sector context: forward outlook, global
+            benchmarks, national imports, retail fuel, sector news. LNG import volume still
+            pending (see note above OIL_IMPORTS_LAST_MONTH). */}
+        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
+          <OilOutlookTrendTile />
+          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
+          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
+          <FuelComboTile petrol={petrol} hsd={hsd} />
           <NewsTickerTile
             heading="PPIS Sector News"
             subheading="E&P Sector Updates"
@@ -1401,7 +1405,6 @@ export default function Home() {
             error={ppisNewsError}
             sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
           />
-          <ProductionShareKpiTile data={MARI_PRODUCTION_SHARE} />
         </div>
 
         {showDetails && (
