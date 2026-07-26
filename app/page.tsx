@@ -326,14 +326,26 @@ const MARI_DIVIDEND = {
   source: "MariEnergies Integrated Annual Report 2025",
 };
 
-// Annual finding cost (USD per BOE of reserves added through exploration), from the Directors'
-// Report's "Operational KPIs" table. This is a narrower, exploration-efficiency metric — NOT the
-// same as an all-in operating cost per BOE (which would also need opex and would require fresh
-// peer research to be comparable to OGDCL/PPL/POL) — labeled precisely as "finding cost" for that
-// reason rather than a generic "cost per BOE".
+// Annual finding cost AND finding & development (F&D) cost, both USD per BOE, from the Directors'
+// Report's "Operational KPIs" table (p.251, YoY figures) and the Chairman's Review's "Building a
+// Stronger Resource Base" infographics (p.11-12, 5-year-rolling figures). Finding Cost =
+// exploration spend only, per BOE of reserves added (a pure discovery-efficiency metric); its
+// `prior` here is the YoY FY2023-24 figure (0.9), matching the Operational KPIs table. F&D Cost =
+// finding cost PLUS development capital spend — the broader of the two disclosed metrics, closer
+// to what "should include more than just exploration" means, though still capex-only; the report
+// only discloses it as a 5-year rolling average (2020 vs 2025), so its `prior` here is the 2020
+// baseline (15.38), not a YoY figure — labeled accordingly in the tile rather than implied as YoY.
+// Neither metric includes production/operating (lifting) costs: Mari's Statement of Profit or
+// Loss doesn't break "Operating and administrative expenses" down to a per-BOE figure, and this
+// specific PDF's P&L table has rows/values shifted by one line when extracted as plain text (the
+// same recurring artifact noted elsewhere for this document), so an opex-inclusive number was
+// deliberately not hand-computed from it rather than risk a wrong figure — a genuine all-in
+// operating-cost-per-BOE would need Mari's own disclosure of that split or fresh peer research,
+// neither available this session.
 const MARI_FINDING_COST = {
   fiscalYearLabel: "FY 2024-25",
   findingCostUsdPerBoe: { current: 0.8, prior: 0.9 },
+  fdCostUsdPerBoe: { current: 6.46, priorFiveYearBaseline: 15.38 },
   source: "MariEnergies Integrated Annual Report 2025",
 };
 
@@ -542,26 +554,33 @@ function ReservesKpiTile({ data }: { data: typeof MARI_RESERVES }) {
 }
 
 function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
-  const trend = trendArrow(data.findingCostUsdPerBoe.current, data.findingCostUsdPerBoe.prior, false);
+  const fdTrend = trendArrow(data.fdCostUsdPerBoe.current, data.fdCostUsdPerBoe.priorFiveYearBaseline, false);
+  const findingTrend = trendArrow(data.findingCostUsdPerBoe.current, data.findingCostUsdPerBoe.prior, false);
 
   return (
     <div className={KPI_CARD_CLASS}>
       <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
-        Finding Cost
+        Finding &amp; Development Cost
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {data.fiscalYearLabel}</span>
       </div>
       <div className="mt-2 flex items-end gap-1">
-        <span className="text-2xl font-semibold text-mari-navy">
-          {data.findingCostUsdPerBoe.current.toFixed(1)}
-        </span>
+        <span className="text-2xl font-semibold text-mari-navy">{data.fdCostUsdPerBoe.current.toFixed(2)}</span>
         <span className="mb-0.5 text-sm font-normal text-foreground/50">USD/BOE</span>
-        <span className={`mb-0.5 ml-1 text-xs font-medium ${trend.color}`}>
-          {trend.arrow} vs {data.findingCostUsdPerBoe.prior.toFixed(1)} prior
+        <span className={`mb-0.5 ml-1 text-xs font-medium ${fdTrend.color}`}>
+          {fdTrend.arrow} vs {data.fdCostUsdPerBoe.priorFiveYearBaseline.toFixed(2)} (2020)
+        </span>
+      </div>
+      <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-xs">
+        <span className="text-foreground/60">Finding Cost (exploration only)</span>
+        <span className={`font-medium ${findingTrend.color}`}>
+          {data.findingCostUsdPerBoe.current.toFixed(1)} {findingTrend.arrow} vs{" "}
+          {data.findingCostUsdPerBoe.prior.toFixed(1)} prior yr
         </span>
       </div>
       <div className="mt-2 text-[10px] leading-snug text-foreground/50">
-        Exploration cost per barrel of new reserves added — not an all-in operating cost per BOE
-        (that would need opex + fresh peer data).
+        F&amp;D = exploration + development capital spend per BOE of reserves added (5-yr rolling
+        average). Still capex-only — not an all-in operating cost per BOE, which would also need
+        production/lifting opex (not broken out at a per-BOE level in Mari&apos;s own disclosures).
       </div>
       <div className="mt-2 text-[10px] text-foreground/40">Source: {data.source} &middot; updated annually</div>
     </div>
@@ -699,6 +718,58 @@ const IMF_PROGRAM = {
   circularDebtBanksRsBn: 873,
   circularDebtAsOf: "end-May 2026",
 };
+
+function ImfProgramTile() {
+  const latestTranche = IMF_PROGRAM.effTrancheUsdBn + IMF_PROGRAM.rsfTrancheUsdBn;
+  const nextTranche = IMF_PROGRAM.nextReviewEffUsdBn + IMF_PROGRAM.nextReviewRsfUsdBn;
+  const disbursedPercent = (IMF_PROGRAM.totalDisbursedUsdBn / IMF_PROGRAM.totalFacilityUsdBn) * 100;
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        Pakistan IMF Program
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
+      </div>
+      <div className="mt-2 space-y-1.5 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Facility</span>
+          <span className="font-medium text-mari-navy">USD {IMF_PROGRAM.totalFacilityUsdBn.toFixed(1)}bn</span>
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="text-foreground/60">Latest Tranche</span>
+          <span className="text-right">
+            <span className="font-medium text-mari-navy">USD {latestTranche.toFixed(2)}bn</span>
+            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.latestReviewDate}</div>
+          </span>
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="text-foreground/60">Next Tranche</span>
+          <span className="text-right">
+            <span className="font-medium text-mari-navy">&#8776;USD {nextTranche.toFixed(2)}bn</span>
+            <div className="text-[10px] text-foreground/40">test {IMF_PROGRAM.nextReviewTestDate}</div>
+          </span>
+        </div>
+        <div className="flex items-baseline justify-between">
+          <span className="text-foreground/60">Circular Debt</span>
+          <span className="text-right">
+            <span className="font-medium text-status-critical">Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(2)}tn</span>
+            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.circularDebtAsOf}</div>
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-sm">
+        <span className="font-semibold text-foreground/70">Total Disbursed</span>
+        <span className="font-semibold text-mari-green">
+          USD {IMF_PROGRAM.totalDisbursedUsdBn.toFixed(1)}bn
+          <span className="ml-1 text-xs font-normal text-foreground/50">({disbursedPercent.toFixed(0)}%)</span>
+        </span>
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: IMF Staff Report &middot; updated per review, not a live feed
+      </div>
+    </div>
+  );
+}
 
 function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
   return (
@@ -1624,8 +1695,10 @@ export default function Home() {
         </div>
 
         {/* KPI strip, row 2 — external market & sector context: forward outlook, global
-            benchmarks, national imports, retail fuel, sector news. LNG import volume still
-            pending (see note above OIL_IMPORTS_LAST_MONTH). */}
+            benchmarks, national imports, retail fuel, sector news, and Pakistan's IMF program
+            status (country-level macro context, re-added at the user's request alongside — not
+            instead of — the Oil Outlook tile). LNG import volume still pending (see note above
+            OIL_IMPORTS_LAST_MONTH). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <OilOutlookTrendTile />
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
@@ -1638,6 +1711,7 @@ export default function Home() {
             error={ppisNewsError}
             sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
           />
+          <ImfProgramTile />
         </div>
 
         {/* KPI strip, row 3 — financial/operational depth: reserves position, current drilling
