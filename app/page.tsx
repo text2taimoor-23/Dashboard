@@ -1669,13 +1669,14 @@ export default function Home() {
                   {typeof mariShare.marketCapPkrBn === "number" && (
                     <div>Market Cap: PKR {mariShare.marketCapPkrBn.toFixed(1)}bn</div>
                   )}
-                  <div className="mt-1 border-t border-mari-gray-light/60 pt-1">
-                    Div. Yield: {((MARI_DIVIDEND.dividendPerShareRs / mariShare.price) * 100).toFixed(2)}%
-                    <span className="text-foreground/40">
-                      {" "}
-                      &middot; DPS Rs {MARI_DIVIDEND.dividendPerShareRs.toFixed(2)} &middot; Total Rs{" "}
-                      {MARI_DIVIDEND.totalDividendRsBn}bn ({MARI_DIVIDEND.fiscalYearLabel})
-                    </span>
+                  <div className="mt-1 space-y-0.5 border-t border-mari-gray-light/60 pt-1">
+                    <div>Div. Yield: {((MARI_DIVIDEND.dividendPerShareRs / mariShare.price) * 100).toFixed(2)}%</div>
+                    <div className="text-foreground/40">
+                      DPS: Rs {MARI_DIVIDEND.dividendPerShareRs.toFixed(2)}
+                    </div>
+                    <div className="text-foreground/40">
+                      Total: Rs {MARI_DIVIDEND.totalDividendRsBn}bn ({MARI_DIVIDEND.fiscalYearLabel})
+                    </div>
                   </div>
                 </>
               }
