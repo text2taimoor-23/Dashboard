@@ -125,6 +125,14 @@ type HormuzStatusResponse = {
   error?: string;
 };
 
+type PkrUsdResponse = {
+  pkrPerUsd?: number;
+  lastUpdatedUtc?: string | null;
+  fetchedAt?: string;
+  source?: string;
+  error?: string;
+};
+
 type TickerItem = {
   date: string;
   title: string;
@@ -150,6 +158,8 @@ const PSX_ANNOUNCEMENTS_POLL_INTERVAL_MS = 60 * 60_000;
 const HORMUZ_POLL_INTERVAL_MS = 60 * 60_000;
 // Same rationale as PSX above — hourly polling naturally covers the requested 9am daily refresh.
 const PPIS_NEWS_POLL_INTERVAL_MS = 60 * 60_000;
+// The exchange rate API itself only refreshes ~once/24h; this just needs to be no slower than that.
+const PKR_USD_POLL_INTERVAL_MS = 6 * 60 * 60_000;
 const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
@@ -285,6 +295,46 @@ const MARI_PRODUCTION_SHARE = {
     topProducer: { name: "Mari Energies", value: 7656.371 },
   },
   source: "PPIS Upstream Activities · Weekly Oil/Gas Production reports",
+};
+
+// Mari Energies' reserves & resources position, from the FY2024-25 Integrated Annual Report
+// ("Reserves & Resources" chapter and the Directors' Report's "Operational KPIs" table). No API
+// for this — updated by hand once a year when the new Annual Report is published. 2P = Proved +
+// Probable reserves (SPE PRMS definitions); 2C = Contingent Resources. RRR (Reserve Replacement
+// Ratio) = reserves added / production that year (110.3 MMBOE added vs 39.7 MMBOE produced =
+// 278%). R/P = Reserves-to-Production ratio, i.e. years of production left at the current rate
+// if no more reserves were ever added.
+const MARI_RESERVES = {
+  asOfDate: "Jun 30, 2025",
+  reserves2pMmboe: { current: 775.0, prior: 704.4 },
+  resources2cMmboe: { current: 177.1, prior: 111.5 },
+  totalReservesAndResourcesMmboe: { current: 952, prior: 816 },
+  reserveReplacementRatioPercent: 278,
+  reservesToProductionYears: { current: 20, prior: 18 },
+  source: "MariEnergies Integrated Annual Report 2025",
+};
+
+// Dividend per share (DPS) and total payout, from the same FY2024-25 Annual Report — the "Rs
+// 21.70" final dividend footnote, cross-checked against Total dividend (Rs 26bn) / shares
+// outstanding (~1.2006bn, from the PSX Equity Profile scrape) = ~21.66/share, consistent within
+// rounding. Yield is computed live against the current PSX share price (mariShare.price), not
+// hardcoded, since the price itself already updates every 5 min elsewhere on this dashboard.
+const MARI_DIVIDEND = {
+  fiscalYearLabel: "FY 2024-25",
+  dividendPerShareRs: 21.70,
+  totalDividendRsBn: 26,
+  source: "MariEnergies Integrated Annual Report 2025",
+};
+
+// Annual finding cost (USD per BOE of reserves added through exploration), from the Directors'
+// Report's "Operational KPIs" table. This is a narrower, exploration-efficiency metric — NOT the
+// same as an all-in operating cost per BOE (which would also need opex and would require fresh
+// peer research to be comparable to OGDCL/PPL/POL) — labeled precisely as "finding cost" for that
+// reason rather than a generic "cost per BOE".
+const MARI_FINDING_COST = {
+  fiscalYearLabel: "FY 2024-25",
+  findingCostUsdPerBoe: { current: 0.8, prior: 0.9 },
+  source: "MariEnergies Integrated Annual Report 2025",
 };
 
 function DonutRing({ percent, color, size }: { percent: number; color: string; size: number }) {
@@ -426,6 +476,140 @@ function ProductionShareKpiTile({
       </div>
       <div className="mt-2 text-[10px] text-foreground/40">
         Source: PPIS Upstream Activities &middot; login-gated, updated by hand
+      </div>
+    </div>
+  );
+}
+
+function trendArrow(current: number, prior: number, higherIsBetter: boolean) {
+  if (current === prior) return { arrow: "—", color: "text-foreground/50" };
+  const up = current > prior;
+  const good = up === higherIsBetter;
+  return { arrow: up ? "▲" : "▼", color: good ? "text-status-good" : "text-status-critical" };
+}
+
+function ReservesKpiTile({ data }: { data: typeof MARI_RESERVES }) {
+  const reservesTrend = trendArrow(data.reserves2pMmboe.current, data.reserves2pMmboe.prior, true);
+  const rpTrend = trendArrow(data.reservesToProductionYears.current, data.reservesToProductionYears.prior, true);
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        Reserves &amp; Resources
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; 2P, MMBOE</span>
+      </div>
+      <div className="mt-2 flex items-end gap-1">
+        <span className="text-2xl font-semibold text-mari-navy">{data.reserves2pMmboe.current.toFixed(1)}</span>
+        <span className={`mb-0.5 text-xs font-medium ${reservesTrend.color}`}>
+          {reservesTrend.arrow} {Math.abs(data.reserves2pMmboe.current - data.reserves2pMmboe.prior).toFixed(1)}
+        </span>
+      </div>
+      <div className="mt-2 space-y-1 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Reserve Replacement Ratio</span>
+          <span className="font-medium text-status-good">{data.reserveReplacementRatioPercent}%</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">R/P (years left at current rate)</span>
+          <span className={`font-medium ${rpTrend.color}`}>
+            {data.reservesToProductionYears.current} {rpTrend.arrow}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Total 2P + 2C</span>
+          <span className="font-medium text-mari-navy">{data.totalReservesAndResourcesMmboe.current} MMBOE</span>
+        </div>
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: {data.source} &middot; as of {data.asOfDate}, updated annually
+      </div>
+    </div>
+  );
+}
+
+function DividendYieldKpiTile({
+  data,
+  sharePrice,
+}: {
+  data: typeof MARI_DIVIDEND;
+  sharePrice?: number;
+}) {
+  const yieldPercent = typeof sharePrice === "number" ? (data.dividendPerShareRs / sharePrice) * 100 : null;
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        Dividend Yield
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {data.fiscalYearLabel}</span>
+      </div>
+      <div className="mt-2 text-2xl font-semibold text-mari-navy">
+        {yieldPercent !== null ? `${yieldPercent.toFixed(2)}%` : "—"}
+      </div>
+      <div className="mt-2 space-y-1 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Dividend per Share</span>
+          <span className="font-medium text-mari-navy">Rs {data.dividendPerShareRs.toFixed(2)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Total Dividend</span>
+          <span className="font-medium text-mari-navy">Rs {data.totalDividendRsBn}bn</span>
+        </div>
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: {data.source} &middot; yield computed against the live PSX share price
+      </div>
+    </div>
+  );
+}
+
+function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
+  const trend = trendArrow(data.findingCostUsdPerBoe.current, data.findingCostUsdPerBoe.prior, false);
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        Finding Cost
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {data.fiscalYearLabel}</span>
+      </div>
+      <div className="mt-2 flex items-end gap-1">
+        <span className="text-2xl font-semibold text-mari-navy">
+          {data.findingCostUsdPerBoe.current.toFixed(1)}
+        </span>
+        <span className="mb-0.5 text-sm font-normal text-foreground/50">USD/BOE</span>
+        <span className={`mb-0.5 ml-1 text-xs font-medium ${trend.color}`}>
+          {trend.arrow} vs {data.findingCostUsdPerBoe.prior.toFixed(1)} prior
+        </span>
+      </div>
+      <div className="mt-2 text-[10px] leading-snug text-foreground/50">
+        Exploration cost per barrel of new reserves added — not an all-in operating cost per BOE
+        (that would need opex + fresh peer data).
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">Source: {data.source} &middot; updated annually</div>
+    </div>
+  );
+}
+
+function PkrUsdKpiTile({ data, error }: { data: PkrUsdResponse | null; error: string | null }) {
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        PKR / USD
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; exchange rate</span>
+      </div>
+      {error && !data?.pkrPerUsd && <div className="mt-2 text-xs text-status-critical">{error}</div>}
+      {typeof data?.pkrPerUsd === "number" && (
+        <>
+          <div className="mt-2 text-2xl font-semibold text-mari-navy">
+            {data.pkrPerUsd.toFixed(2)}
+            <span className="ml-1 text-sm font-normal text-foreground/50">PKR</span>
+          </div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
+            Per 1 USD &middot; relevant to Mari&apos;s USD-linked incremental gas price &amp; receivables
+          </div>
+        </>
+      )}
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: exchangerate-api.com &middot; refreshes ~daily
       </div>
     </div>
   );
@@ -1062,6 +1246,8 @@ export default function Home() {
   const [hormuzStatusError, setHormuzStatusError] = useState<string | null>(null);
   const [ppisNews, setPpisNews] = useState<PpisNewsResponse | null>(null);
   const [ppisNewsError, setPpisNewsError] = useState<string | null>(null);
+  const [pkrUsd, setPkrUsd] = useState<PkrUsdResponse | null>(null);
+  const [pkrUsdError, setPkrUsdError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -1312,6 +1498,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchPkrUsd() {
+      try {
+        const res = await fetch("/api/pkr-usd-rate", { cache: "no-store" });
+        const data: PkrUsdResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || data.error) {
+          setPkrUsdError(data.error ?? "Failed to fetch PKR/USD exchange rate");
+          return;
+        }
+
+        setPkrUsdError(null);
+        setPkrUsd(data);
+      } catch {
+        if (!cancelled) setPkrUsdError("Network error while fetching PKR/USD exchange rate");
+      }
+    }
+
+    fetchPkrUsd();
+    const interval = setInterval(fetchPkrUsd, PKR_USD_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const petrol = prices.find((p) => p.code === "PETROL");
   const hsd = prices.find((p) => p.code === "HSD");
   const lastVerifiedGas = mari?.lastVerified;
@@ -1405,6 +1621,16 @@ export default function Home() {
             error={ppisNewsError}
             sourceNote="Source: PPIS Media Hub (ppisonline.com) · refreshed hourly, spans the 9am daily update"
           />
+        </div>
+
+        {/* KPI strip, row 3 — financial/operational depth: reserves position, dividend yield,
+            finding cost (all Mari-specific, annually updated from the Integrated Annual Report),
+            plus PKR/USD since Mari's incremental gas price and receivables are USD-linked. */}
+        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
+          <ReservesKpiTile data={MARI_RESERVES} />
+          <DividendYieldKpiTile data={MARI_DIVIDEND} sharePrice={mariShare?.price} />
+          <FindingCostKpiTile data={MARI_FINDING_COST} />
+          <PkrUsdKpiTile data={pkrUsd} error={pkrUsdError} />
         </div>
 
         {showDetails && (
