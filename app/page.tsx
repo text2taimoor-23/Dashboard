@@ -527,41 +527,6 @@ function ReservesKpiTile({ data }: { data: typeof MARI_RESERVES }) {
   );
 }
 
-function DividendYieldKpiTile({
-  data,
-  sharePrice,
-}: {
-  data: typeof MARI_DIVIDEND;
-  sharePrice?: number;
-}) {
-  const yieldPercent = typeof sharePrice === "number" ? (data.dividendPerShareRs / sharePrice) * 100 : null;
-
-  return (
-    <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
-        Dividend Yield
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {data.fiscalYearLabel}</span>
-      </div>
-      <div className="mt-2 text-2xl font-semibold text-mari-navy">
-        {yieldPercent !== null ? `${yieldPercent.toFixed(2)}%` : "—"}
-      </div>
-      <div className="mt-2 space-y-1 text-xs">
-        <div className="flex items-center justify-between">
-          <span className="text-foreground/60">Dividend per Share</span>
-          <span className="font-medium text-mari-navy">Rs {data.dividendPerShareRs.toFixed(2)}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-foreground/60">Total Dividend</span>
-          <span className="font-medium text-mari-navy">Rs {data.totalDividendRsBn}bn</span>
-        </div>
-      </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
-        Source: {data.source} &middot; yield computed against the live PSX share price
-      </div>
-    </div>
-  );
-}
-
 function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
   const trend = trendArrow(data.findingCostUsdPerBoe.current, data.findingCostUsdPerBoe.prior, false);
 
@@ -585,32 +550,6 @@ function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
         (that would need opex + fresh peer data).
       </div>
       <div className="mt-2 text-[10px] text-foreground/40">Source: {data.source} &middot; updated annually</div>
-    </div>
-  );
-}
-
-function PkrUsdKpiTile({ data, error }: { data: PkrUsdResponse | null; error: string | null }) {
-  return (
-    <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
-        PKR / USD
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; exchange rate</span>
-      </div>
-      {error && !data?.pkrPerUsd && <div className="mt-2 text-xs text-status-critical">{error}</div>}
-      {typeof data?.pkrPerUsd === "number" && (
-        <>
-          <div className="mt-2 text-2xl font-semibold text-mari-navy">
-            {data.pkrPerUsd.toFixed(2)}
-            <span className="ml-1 text-sm font-normal text-foreground/50">PKR</span>
-          </div>
-          <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">
-            Per 1 USD &middot; relevant to Mari&apos;s USD-linked incremental gas price &amp; receivables
-          </div>
-        </>
-      )}
-      <div className="mt-2 text-[10px] text-foreground/40">
-        Source: exchangerate-api.com &middot; refreshes ~daily
-      </div>
     </div>
   );
 }
@@ -904,7 +843,15 @@ function HormuzStatusBadge({ data, error }: { data: HormuzStatusResponse | null;
   );
 }
 
-function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint }) {
+function FuelComboTile({
+  petrol,
+  hsd,
+  pkrPerUsd,
+}: {
+  petrol?: PricePoint;
+  hsd?: PricePoint;
+  pkrPerUsd?: number;
+}) {
   if (!petrol && !hsd) return null;
   const unit = petrol?.unit ?? hsd?.unit;
   const currency = petrol?.currency ?? hsd?.currency;
@@ -934,6 +881,12 @@ function FuelComboTile({ petrol, hsd }: { petrol?: PricePoint; hsd?: PricePoint 
           </div>
         )}
       </div>
+      {typeof pkrPerUsd === "number" && (
+        <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-xs">
+          <span className="text-foreground/60">PKR/USD</span>
+          <span className="font-medium text-mari-navy">{pkrPerUsd.toFixed(2)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -1193,7 +1146,7 @@ function StatTile({
   delta?: number;
   deltaPercent?: number | null;
   direction?: "up" | "down" | "flat";
-  caption?: string;
+  caption?: React.ReactNode;
 }) {
   const isUp = direction === "up";
   const isDown = direction === "down";
@@ -1581,9 +1534,19 @@ export default function Home() {
               deltaPercent={mariShare.changePercent}
               direction={mariShare.direction}
               caption={
-                typeof mariShare.marketCapPkrBn === "number"
-                  ? `Market Cap: PKR ${mariShare.marketCapPkrBn.toFixed(1)}bn`
-                  : undefined
+                <>
+                  {typeof mariShare.marketCapPkrBn === "number" && (
+                    <div>Market Cap: PKR {mariShare.marketCapPkrBn.toFixed(1)}bn</div>
+                  )}
+                  <div className="mt-1 border-t border-mari-gray-light/60 pt-1">
+                    Div. Yield: {((MARI_DIVIDEND.dividendPerShareRs / mariShare.price) * 100).toFixed(2)}%
+                    <span className="text-foreground/40">
+                      {" "}
+                      &middot; DPS Rs {MARI_DIVIDEND.dividendPerShareRs.toFixed(2)} &middot; Total Rs{" "}
+                      {MARI_DIVIDEND.totalDividendRsBn}bn ({MARI_DIVIDEND.fiscalYearLabel})
+                    </span>
+                  </div>
+                </>
               }
             />
           )}
@@ -1613,7 +1576,7 @@ export default function Home() {
           <OilOutlookTrendTile />
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
-          <FuelComboTile petrol={petrol} hsd={hsd} />
+          <FuelComboTile petrol={petrol} hsd={hsd} pkrPerUsd={pkrUsd?.pkrPerUsd} />
           <NewsTickerTile
             heading="PPIS Sector News"
             subheading="E&P Sector Updates"
@@ -1623,14 +1586,13 @@ export default function Home() {
           />
         </div>
 
-        {/* KPI strip, row 3 — financial/operational depth: reserves position, dividend yield,
-            finding cost (all Mari-specific, annually updated from the Integrated Annual Report),
-            plus PKR/USD since Mari's incremental gas price and receivables are USD-linked. */}
+        {/* KPI strip, row 3 — financial/operational depth: reserves position and finding cost
+            (Mari-specific, annually updated from the Integrated Annual Report). Dividend yield is
+            now merged into the MARI Share tile's caption, and PKR/USD into the Petrol & HSD tile's
+            footer, rather than standalone tiles here. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <ReservesKpiTile data={MARI_RESERVES} />
-          <DividendYieldKpiTile data={MARI_DIVIDEND} sharePrice={mariShare?.price} />
           <FindingCostKpiTile data={MARI_FINDING_COST} />
-          <PkrUsdKpiTile data={pkrUsd} error={pkrUsdError} />
         </div>
 
         {showDetails && (
