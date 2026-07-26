@@ -337,6 +337,20 @@ const MARI_FINDING_COST = {
   source: "MariEnergies Integrated Annual Report 2025",
 };
 
+// Mari Energies' share of Pakistan's currently active drilling rigs, from PPIS's Upstream
+// Activities > Drilling Status report (same login-gated, hand-updated pattern as
+// MARI_PRODUCTION_SHARE — no public API for this). Split into exploratory vs. appraisal/
+// development wells since that distinction matters to management (exploratory = new discovery
+// potential, appraisal/development = near-term production growth). topDriller is the company
+// with the most active rigs nationally by well count, across both categories combined.
+const MARI_DRILLING_ACTIVITY = {
+  asOfDate: "Jul 16, 2026",
+  mariWells: { exploratory: 1, appraisalDevelopment: 3, total: 4 },
+  totalWellsNational: 21,
+  topDriller: { name: "OGDCL", wells: 9 },
+  source: "PPIS Upstream Activities · Drilling Status report",
+};
+
 function DonutRing({ percent, color, size }: { percent: number; color: string; size: number }) {
   const data = [
     { name: "Mari Energies", value: percent },
@@ -550,6 +564,46 @@ function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
         (that would need opex + fresh peer data).
       </div>
       <div className="mt-2 text-[10px] text-foreground/40">Source: {data.source} &middot; updated annually</div>
+    </div>
+  );
+}
+
+function DrillingActivityKpiTile({ data }: { data: typeof MARI_DRILLING_ACTIVITY }) {
+  const mariPercent = (data.mariWells.total / data.totalWellsNational) * 100;
+  const topDrillerPercent = (data.topDriller.wells / data.totalWellsNational) * 100;
+  const isMariTop = data.topDriller.name === "Mari Energies";
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+        Drilling Activity
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; active wells</span>
+      </div>
+      <div className="mt-2 flex items-end gap-1">
+        <span className="text-2xl font-semibold text-mari-navy">{data.mariWells.total}</span>
+        <span className="mb-0.5 text-sm font-normal text-foreground/50">
+          of {data.totalWellsNational} ({mariPercent.toFixed(1)}%)
+        </span>
+      </div>
+      <div className="mt-2 space-y-1 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Exploratory</span>
+          <span className="font-medium text-mari-navy">{data.mariWells.exploratory}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Appraisal / Development</span>
+          <span className="font-medium text-mari-navy">{data.mariWells.appraisalDevelopment}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Top Driller</span>
+          <span className="font-medium text-mari-navy">
+            {isMariTop ? "Mari is #1" : `${data.topDriller.name} (${topDrillerPercent.toFixed(0)}%)`}
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: {data.source} &middot; as of {data.asOfDate}, updated by hand
+      </div>
     </div>
   );
 }
@@ -1586,12 +1640,14 @@ export default function Home() {
           />
         </div>
 
-        {/* KPI strip, row 3 — financial/operational depth: reserves position and finding cost
-            (Mari-specific, annually updated from the Integrated Annual Report). Dividend yield is
-            now merged into the MARI Share tile's caption, and PKR/USD into the Petrol & HSD tile's
-            footer, rather than standalone tiles here. */}
+        {/* KPI strip, row 3 — financial/operational depth: reserves position, current drilling
+            activity, and finding cost (all Mari-specific; reserves/finding cost from the annual
+            Integrated Annual Report, drilling activity from PPIS's login-gated Drilling Status
+            report). Dividend yield is merged into the MARI Share tile's caption, and PKR/USD into
+            the Petrol & HSD tile's footer, rather than standalone tiles here. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <ReservesKpiTile data={MARI_RESERVES} />
+          <DrillingActivityKpiTile data={MARI_DRILLING_ACTIVITY} />
           <FindingCostKpiTile data={MARI_FINDING_COST} />
         </div>
 
