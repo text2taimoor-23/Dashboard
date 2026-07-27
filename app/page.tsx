@@ -167,7 +167,7 @@ const MARI_LOGO_URL =
 // flat white fill, a thin hairline border, a restrained 2px navy top accent instead of a loud
 // colored card, almost no corner radius, no shadow/elevation.
 const KPI_CARD_CLASS =
-  "rounded-sm border border-mari-gray-light border-t-2 border-t-mari-navy bg-white p-3";
+  "rounded-md border border-mari-gray-light border-t-[3px] border-t-mari-navy bg-white p-3 shadow-sm transition-shadow duration-150 hover:shadow-md";
 
 // Trade debts (receivables) broken down by counterparty, from the "Transactions and balances
 // with related parties" note in Mari Energies' standalone quarterly reports (marienergies.com.pk/
@@ -238,7 +238,7 @@ function OilImportsTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Pakistan Oil Imports
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {periodLabel}</span>
       </div>
@@ -476,7 +476,7 @@ function ProductionShareKpiTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Mari Production Share
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; wk of {data.periodLabel}</span>
       </div>
@@ -520,7 +520,7 @@ function ReservesKpiTile({ data }: { data: typeof MARI_RESERVES }) {
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Reserves &amp; Resources
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; 2P, MMBOE</span>
       </div>
@@ -559,7 +559,7 @@ function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Finding &amp; Development Cost
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {data.fiscalYearLabel}</span>
       </div>
@@ -594,7 +594,7 @@ function DrillingActivityKpiTile({ data }: { data: typeof MARI_DRILLING_ACTIVITY
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Drilling Activity
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; active wells</span>
       </div>
@@ -726,7 +726,7 @@ function ImfProgramTile() {
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Pakistan IMF Program
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
       </div>
@@ -774,7 +774,7 @@ function ImfProgramTile() {
 function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Global Oil Benchmarks
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/barrel</span>
       </div>
@@ -829,7 +829,7 @@ function NewsTickerTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         {heading}
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {subheading}</span>
       </div>
@@ -983,7 +983,7 @@ function FuelComboTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Petrol &amp; HSD
         {currency && unit && (
           <span className="ml-1 font-normal normal-case text-foreground/40">
@@ -1035,7 +1035,7 @@ function GasComboTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Mari Field Gas Price
       </div>
 
@@ -1108,7 +1108,7 @@ function QuarterReceivablesTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         MariEnergies Receivables
         <span className="ml-1 font-normal normal-case text-foreground/40">
           &middot; {quarter} &middot; {period} &middot; PKR mn
@@ -1188,7 +1188,7 @@ function OilPriceOutlook() {
 function OilOutlookTrendTile() {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Oil Price Outlook
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; Brent scenario</span>
       </div>
@@ -1285,7 +1285,7 @@ function StatTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">{label}</div>
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-mari-navy">
         {value}
         {unit && <span className="ml-1 text-sm font-normal text-foreground/50">{unit}</span>}
@@ -1618,12 +1618,12 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-mari-gray-bg">
-      <header className="border-b-2 border-mari-green bg-mari-navy">
-        <div className="mx-auto flex max-w-[1800px] items-center gap-4 px-4 py-2">
+      <header className="border-b-[3px] border-mari-green bg-gradient-to-r from-mari-navy via-mari-navy to-[#0d3a70] shadow-md">
+        <div className="mx-auto flex max-w-[1800px] items-center gap-4 px-4 py-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-6 w-auto" />
-          <div className="h-4 w-px bg-white/20" />
-          <span className="text-xs font-bold uppercase tracking-wide text-white/90">
+          <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-7 w-auto" />
+          <div className="h-5 w-px bg-white/25" />
+          <span className="text-xs font-extrabold uppercase tracking-widest text-white">
             BDC Dashboard
           </span>
         </div>
@@ -1632,8 +1632,10 @@ export default function Home() {
       <main className="mx-auto w-full max-w-[1800px] flex-1 px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-base font-semibold tracking-tight text-mari-navy">Overview</h1>
-            <p className="text-xs text-foreground/70">{today}</p>
+            <h1 className="inline-block border-b-2 border-mari-green pb-0.5 text-lg font-extrabold tracking-tight text-mari-navy">
+              Overview
+            </h1>
+            <p className="mt-1 text-xs text-foreground/70">{today}</p>
           </div>
           <div className="flex items-center gap-2">
             <HormuzStatusBadge data={hormuzStatus} error={hormuzStatusError} />
@@ -1981,8 +1983,8 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="mt-4 bg-mari-gray-light/40">
-        <div className="mx-auto max-w-[1800px] px-4 py-2 text-xs text-foreground/70">
+      <footer className="mt-4 border-t-[3px] border-mari-green bg-mari-navy">
+        <div className="mx-auto max-w-[1800px] px-4 py-2 text-xs font-medium text-white/70">
           &copy; {new Date().getUTCFullYear()} MariEnergies BDC Department Internal Dashboard
         </div>
       </footer>
