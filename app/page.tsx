@@ -238,7 +238,7 @@ function OilImportsTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Pakistan Oil Imports
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {periodLabel}</span>
       </div>
@@ -476,7 +476,7 @@ function ProductionShareKpiTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Mari Production Share
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; wk of {data.periodLabel}</span>
       </div>
@@ -520,7 +520,7 @@ function ReservesKpiTile({ data }: { data: typeof MARI_RESERVES }) {
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Reserves &amp; Resources
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; 2P, MMBOE</span>
       </div>
@@ -559,7 +559,7 @@ function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Finding &amp; Development Cost
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {data.fiscalYearLabel}</span>
       </div>
@@ -594,7 +594,7 @@ function DrillingActivityKpiTile({ data }: { data: typeof MARI_DRILLING_ACTIVITY
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Drilling Activity
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; active wells</span>
       </div>
@@ -726,7 +726,7 @@ function ImfProgramTile() {
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Pakistan IMF Program
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
       </div>
@@ -774,7 +774,7 @@ function ImfProgramTile() {
 function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Global Oil Benchmarks
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/barrel</span>
       </div>
@@ -829,7 +829,7 @@ function NewsTickerTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         {heading}
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {subheading}</span>
       </div>
@@ -983,7 +983,7 @@ function FuelComboTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Petrol &amp; HSD
         {currency && unit && (
           <span className="ml-1 font-normal normal-case text-foreground/40">
@@ -1035,7 +1035,7 @@ function GasComboTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Mari Field Gas Price
       </div>
 
@@ -1108,7 +1108,7 @@ function QuarterReceivablesTile({
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         MariEnergies Receivables
         <span className="ml-1 font-normal normal-case text-foreground/40">
           &middot; {quarter} &middot; {period} &middot; PKR mn
@@ -1188,7 +1188,7 @@ function OilPriceOutlook() {
 function OilOutlookTrendTile() {
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">
         Oil Price Outlook
         <span className="ml-1 font-normal normal-case text-foreground/40">&middot; Brent scenario</span>
       </div>
@@ -1285,7 +1285,7 @@ function StatTile({
 
   return (
     <div className={KPI_CARD_CLASS}>
-      <div className="text-xs font-medium uppercase tracking-wider text-foreground/60">{label}</div>
+      <div className="min-h-8 text-left text-xs font-bold uppercase tracking-wider text-foreground/60">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-mari-navy">
         {value}
         {unit && <span className="ml-1 text-sm font-normal text-foreground/50">{unit}</span>}
@@ -1701,9 +1701,10 @@ export default function Home() {
           />
         </div>
 
-        {/* KPI strip, row 2 — per the same ordering request: Global Oil Price, Price Outlook,
-            Petrol & HSD, then Receivables (swapped in from row 1's former PSX Announcements
-            slot), then PPIS Sector News — positions 4 and 5 swapped per a follow-up request. */}
+        {/* KPI strip, row 2 — final order after two follow-up swap requests: Global Oil Price,
+            Price Outlook, Petrol & HSD, Receivables (swapped in from row 1's former PSX
+            Announcements slot), then PPIS Sector News (its slot swapped with Receivables' once
+            more, landing PPIS last). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <OilOutlookTrendTile />
