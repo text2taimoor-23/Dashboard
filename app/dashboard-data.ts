@@ -304,28 +304,31 @@ export const MARI_OPERATORSHIP = {
   source: "MariEnergies Concession Map (marienergies.com.pk/what-we-do/concession-map)",
 };
 
-// Field-level names for Mari's D&P Leases (the actual producing fields — exploration licenses
-// don't have wellhead price notifications since they aren't producing yet), read directly from
-// the same Concession Map dataset as MARI_OPERATORSHIP above. Deliberately does NOT carry a
+// Field-level names for Mari's GAS-producing D&P Leases only (OGRA wellhead price notifications
+// are a gas-specific mechanism under the Natural Gas (Wellhead Price) Regulations, 2009 — oil
+// fields aren't OGRA-notified at all, so they're excluded here). Read from the same Concession
+// Map dataset as MARI_OPERATORSHIP above (field names), cross-referenced against each field's
+// own "Hydrocarbon Type" on marienergies.com.pk/what-we-do/field-details (Operated and Non
+// Operated tabs) to filter out the two pure-oil operated fields: Bolan East ("Oil") and Ghauri
+// ("Oil"). All 7 non-operated fields are gas or gas-and-condensate, so none were excluded there.
+// Halini is "Oil and Gas" (kept, since it does produce gas). Deliberately does NOT carry a
 // per-field wellhead price for anything except Mari Field itself: OGRA's site
 // (ogra.org.pk/well-head-gas-prices) no longer resolves at all as of 2026-08-02 — it now
 // redirects to a near-empty parked-looking homepage — so there is no live or archival source to
-// verify a price for the other 7 operated fields against. Only Mari Field's price is shown
+// verify a price for the other 12 gas fields against. Only Mari Field's price is shown
 // on-dashboard, sourced the same way as everywhere else on this dashboard: hand-read from the
 // actual OGRA gazette PDF (see LAST_VERIFIED_MARI_PRICE in app/api/mari-gas-price/route.ts), not
 // scraped from the broken site. Do not add fabricated prices for the other fields here.
-export const MARI_OPERATED_FIELDS = [
-  "Mari Field",
-  "Ghauri",
+export const MARI_OPERATED_GAS_FIELDS = [
   "Sujawal",
   "Kalabagh (Karak)",
   "Zarghun South",
   "Sujjal",
   "Halini (Kalabagh Field)",
-  "Bolan East",
+  "Mari Field",
 ];
 
-export const MARI_NON_OPERATED_FIELDS = [
+export const MARI_NON_OPERATED_GAS_FIELDS = [
   "Ratana",
   "Benari (Shahbandar)",
   "Fazl X-1 (Hala)",

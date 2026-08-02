@@ -14,8 +14,8 @@ import {
 } from "recharts";
 import {
   BDC_TEAM_UPDATES,
-  MARI_NON_OPERATED_FIELDS,
-  MARI_OPERATED_FIELDS,
+  MARI_NON_OPERATED_GAS_FIELDS,
+  MARI_OPERATED_GAS_FIELDS,
   MARI_OPERATORSHIP,
   PsxPeerPricesResponse,
   PSX_PEER_PRICES_POLL_INTERVAL_MS,
@@ -675,63 +675,81 @@ function OperatorshipKpiTile({ data }: { data: typeof MARI_OPERATORSHIP }) {
   );
 }
 
-// Field-level list of Mari's operated/non-operated D&P leases (see MARI_OPERATED_FIELDS /
-// MARI_NON_OPERATED_FIELDS for sourcing), paired with Mari Field's own wellhead price status —
-// the only one of these 15 fields with a verifiable price, since OGRA's notification site
-// (ogra.org.pk/well-head-gas-prices) no longer resolves. Reuses the same `mari` state (lastVerified
-// + nextPeriod.notified) already powering GasComboTile, so the Pending/Notified badge here always
-// matches that tile.
-function OperatedFieldsKpiTile({
-  operatedFields,
-  nonOperatedFields,
+// Per-field wellhead gas price table for Mari's operated + non-operated GAS fields only (see
+// MARI_OPERATED_GAS_FIELDS / MARI_NON_OPERATED_GAS_FIELDS for the oil-field exclusions and
+// sourcing). Two price columns per the user's explicit request — Jan-Jun 2026 and Jul-Dec 2026 —
+// but Mari Field is the ONLY row with real figures: OGRA's notification site
+// (ogra.org.pk/well-head-gas-prices) no longer resolves at all, so there is no source, live or
+// archival, to verify a Jan-Jun price for the other 12 gas fields against, nor to check whether
+// any of them has a Jul-Dec notification yet. Their cells intentionally show "—" (not a fabricated
+// number, and not a blinking Pending badge either — Pending would wrongly imply this dashboard is
+// actively monitoring a real notification queue for those fields, which it isn't). Mari Field's
+// Jul-Dec cell reuses the same `mari` state (nextPeriod.notified) already powering GasComboTile,
+// so its Pending/Notified badge always matches that tile.
+function GasFieldWellheadPricesKpiTile({
+  operatedGasFields,
+  nonOperatedGasFields,
   mari,
 }: {
-  operatedFields: string[];
-  nonOperatedFields: string[];
+  operatedGasFields: string[];
+  nonOperatedGasFields: string[];
   mari: MariApiResponse | null;
 }) {
   const lastVerified = mari?.lastVerified;
   const nextPeriod = mari?.nextPeriod;
+  const rows = [
+    ...operatedGasFields.map((name) => ({ name, operated: true })),
+    ...nonOperatedGasFields.map((name) => ({ name, operated: false })),
+  ];
 
   return (
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
-        Operated Fields
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; wellhead price status</span>
+        Gas Field Wellhead Prices
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; PKR/MMBTU</span>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 rounded-sm bg-mari-navy/10 px-2 py-1.5">
-        <div>
-          <div className="text-xs font-semibold text-mari-navy">Mari Field &middot; {nextPeriod?.periodShort ?? "next period"}</div>
-          <div className="text-[10px] text-foreground/50">
-            {typeof lastVerified?.benchmark?.value === "number"
-              ? `Last notified: ${lastVerified.benchmark.value.toFixed(2)} PKR/MMBTU (${lastVerified.periodShort})`
-              : "Loading…"}
-          </div>
-        </div>
-        {nextPeriod?.notified ? <StatusPill status="good" label="Notified" /> : <PendingBadge />}
+      <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-foreground/40">
+        <span>Field</span>
+        <span className="flex gap-3">
+          <span className="w-14 text-right">Jan-Jun</span>
+          <span className="w-16 text-right">Jul-Dec</span>
+        </span>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-        <div>
-          <div className="font-medium uppercase tracking-wide text-foreground/50">Operated ({operatedFields.length})</div>
-          <ul className="mt-1 space-y-0.5 text-foreground/70">
-            {operatedFields.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <div className="font-medium uppercase tracking-wide text-foreground/50">Non-Operated ({nonOperatedFields.length})</div>
-          <ul className="mt-1 space-y-0.5 text-foreground/70">
-            {nonOperatedFields.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        </div>
+      <div className="mt-1 space-y-1 text-[11px]">
+        {rows.map((row) => {
+          const isMari = row.name === "Mari Field";
+          return (
+            <div key={row.name} className="flex items-center justify-between gap-2">
+              <span className={isMari ? "font-semibold text-mari-navy" : "text-foreground/70"}>
+                {row.name}
+                {!row.operated && <span className="ml-1 text-[9px] text-foreground/30">(non-op.)</span>}
+              </span>
+              <span className="flex flex-shrink-0 items-center gap-3">
+                <span className="w-14 text-right font-medium text-mari-navy">
+                  {isMari && typeof lastVerified?.benchmark?.value === "number"
+                    ? lastVerified.benchmark.value.toFixed(2)
+                    : "—"}
+                </span>
+                <span className="w-16 text-right">
+                  {isMari ? (
+                    nextPeriod?.notified ? (
+                      <span className="font-medium text-status-good">Notified</span>
+                    ) : (
+                      <span className="inline-block animate-pulse font-medium text-status-warning">Pending</span>
+                    )
+                  ) : (
+                    <span className="text-foreground/30">—</span>
+                  )}
+                </span>
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div className="mt-2 text-[10px] leading-snug text-foreground/40">
-        Field names: MariEnergies Concession Map. Only Mari Field has a hand-verified wellhead
-        price — OGRA&apos;s notification site is currently unreachable, so no price is shown for
-        the other fields rather than guessing.
+        Fields: MariEnergies Concession Map, gas-producing only. Only Mari Field has a
+        hand-verified wellhead price — OGRA&apos;s notification site no longer resolves, so the
+        other {rows.length - 1} fields show no figure rather than a guess.
       </div>
     </div>
   );
@@ -1915,11 +1933,12 @@ export default function Home() {
         </div>
 
         {/* KPI strip, row 4 — field-level detail behind row 3's Operatorship summary, added per a
-            follow-up request. Only 1 tile; partial row is fine. */}
+            follow-up request and then narrowed to gas fields only with a Jan-Jun/Jul-Dec price
+            table per a further follow-up. Only 1 tile; partial row is fine. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <OperatedFieldsKpiTile
-            operatedFields={MARI_OPERATED_FIELDS}
-            nonOperatedFields={MARI_NON_OPERATED_FIELDS}
+          <GasFieldWellheadPricesKpiTile
+            operatedGasFields={MARI_OPERATED_GAS_FIELDS}
+            nonOperatedGasFields={MARI_NON_OPERATED_GAS_FIELDS}
             mari={mari}
           />
         </div>
