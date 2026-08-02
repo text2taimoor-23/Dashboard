@@ -14,9 +14,11 @@ import {
 } from "recharts";
 import {
   BDC_TEAM_UPDATES,
+  MARI_DRILLING_ACTIVITY,
   MARI_NON_OPERATED_GAS_FIELDS,
   MARI_OPERATED_GAS_FIELDS,
   MARI_OPERATORSHIP,
+  MARI_PRODUCTION_SHARE,
   PsxPeerPricesResponse,
   PSX_PEER_PRICES_POLL_INTERVAL_MS,
 } from "./dashboard-data";
@@ -276,35 +278,6 @@ function OilImportsTile({
   );
 }
 
-// Mari Energies' share of Pakistan's total weekly oil/gas production, from PPIS's Upstream
-// Activities portal (ppisonline.com/upstream-activities — login-gated, no public API). Not
-// pollable like the rest of this dashboard: PPIS requires an authenticated session, so this is
-// pulled by hand each week (Claude logs in with the user present, reads the two "Weekly
-// Production" PDFs, and updates this constant) rather than fetched by a server route.
-// Oil: sums both "Mari Energies" rows in the report (Northern region — Halini/Dharian/Shewa/
-// Spinwarm/Kalabagh — and Southern region — Sujjal/Shams/Bolan East) against the report's Grand
-// Total. Gas: the single "Mari Energies" sub-total (Mari/Halini/Sujjal/Shewa/Shams/Spinwarm/
-// Kalabagh) against the Grand Total.
-// topProducer is each field's combined company total (summing a company's rows across both the
-// report's Northern and Southern region sections where it appears in both, e.g. OGDCL). For gas,
-// Mari Energies itself is the top producer nationally this week — ahead of OGDCL (6,894.58 MMCFT).
-const MARI_PRODUCTION_SHARE = {
-  periodLabel: "Jul 9-16, 2026",
-  oil: {
-    mariBbl: 13778.875,
-    totalBbl: 570754.2,
-    unit: "bbl",
-    topProducer: { name: "OGDCL", value: 315339.0 },
-  },
-  gas: {
-    mariMmcft: 7656.371,
-    totalMmcft: 24039.02,
-    unit: "MMCFT",
-    topProducer: { name: "Mari Energies", value: 7656.371 },
-  },
-  source: "PPIS Upstream Activities · Weekly Oil/Gas Production reports",
-};
-
 // Mari Energies' reserves & resources position, from the FY2024-25 Integrated Annual Report
 // ("Reserves & Resources" chapter and the Directors' Report's "Operational KPIs" table). No API
 // for this — updated by hand once a year when the new Annual Report is published. 2P = Proved +
@@ -355,20 +328,6 @@ const MARI_FINDING_COST = {
   findingCostUsdPerBoe: { current: 0.8, prior: 0.9 },
   fdCostUsdPerBoe: { current: 6.46, priorFiveYearBaseline: 15.38 },
   source: "MariEnergies Integrated Annual Report 2025",
-};
-
-// Mari Energies' share of Pakistan's currently active drilling rigs, from PPIS's Upstream
-// Activities > Drilling Status report (same login-gated, hand-updated pattern as
-// MARI_PRODUCTION_SHARE — no public API for this). Split into exploratory vs. appraisal/
-// development wells since that distinction matters to management (exploratory = new discovery
-// potential, appraisal/development = near-term production growth). topDriller is the company
-// with the most active rigs nationally by well count, across both categories combined.
-const MARI_DRILLING_ACTIVITY = {
-  asOfDate: "Jul 16, 2026",
-  mariWells: { exploratory: 1, appraisalDevelopment: 3, total: 4 },
-  totalWellsNational: 21,
-  topDriller: { name: "OGDCL", wells: 9 },
-  source: "PPIS Upstream Activities · Drilling Status report",
 };
 
 function DonutRing({ percent, color, size }: { percent: number; color: string; size: number }) {
@@ -500,7 +459,7 @@ function ProductionShareKpiTile({
         />
         <ProductionShareStat
           percent={gasPercent}
-          color="#8facc6"
+          color="#4c6f92"
           label="Gas"
           unit={data.gas.unit}
           topProducer={data.gas.topProducer}
@@ -780,7 +739,7 @@ const OIL_PRICE_OUTLOOK = {
     },
     {
       case: "Base",
-      color: "#8facc6",
+      color: "#4c6f92",
       probability: "~45-50%",
       brentRange: "USD 90-105/bbl",
       narrative:
@@ -1351,8 +1310,8 @@ function OilOutlookTrendTile() {
       <div className="mt-1 h-20 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={OIL_PRICE_OUTLOOK.trendPath} margin={{ top: 2, right: 2, left: -30, bottom: 0 }}>
-            <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#8facc6" }} axisLine={false} tickLine={false} interval={1} />
-            <YAxis tick={{ fontSize: 9, fill: "#8facc6" }} axisLine={false} tickLine={false} domain={[60, 130]} width={26} />
+            <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#4c6f92" }} axisLine={false} tickLine={false} interval={1} />
+            <YAxis tick={{ fontSize: 9, fill: "#4c6f92" }} axisLine={false} tickLine={false} domain={[60, 130]} width={26} />
             <Tooltip
               formatter={(value, name) => [`$${value}`, name]}
               contentStyle={{
@@ -1366,7 +1325,7 @@ function OilOutlookTrendTile() {
               labelStyle={{ color: "#8facc6" }}
             />
             <Line type="monotone" dataKey="bull" name="Bull" stroke="#e4685d" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="base" name="Base" stroke="#8facc6" strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="base" name="Base" stroke="#4c6f92" strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line type="monotone" dataKey="bear" name="Bear" stroke="#6fcf7a" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>

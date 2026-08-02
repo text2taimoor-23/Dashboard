@@ -229,18 +229,18 @@ export const OIL_IMPORTS_LAST_MONTH = {
 // Mari Energies' share of Pakistan's total weekly oil/gas production, from PPIS's Upstream
 // Activities portal — login-gated, no public API, pulled by hand weekly.
 export const MARI_PRODUCTION_SHARE = {
-  periodLabel: "Jul 9-16, 2026",
+  periodLabel: "Jul 17-23, 2026",
   oil: {
-    mariBbl: 13778.875,
-    totalBbl: 570754.2,
+    mariBbl: 12130.8,
+    totalBbl: 500783.41,
     unit: "bbl",
-    topProducer: { name: "OGDCL", value: 315339.0 },
+    topProducer: { name: "OGDCL", value: 278580.0 },
   },
   gas: {
-    mariMmcft: 7656.371,
-    totalMmcft: 24039.02,
+    mariMmcft: 6826.49,
+    totalMmcft: 21392.27,
     unit: "MMCFT",
-    topProducer: { name: "Mari Energies", value: 7656.371 },
+    topProducer: { name: "Mari Energies", value: 6826.49 },
   },
   source: "PPIS Upstream Activities · Weekly Oil/Gas Production reports",
 };
@@ -278,10 +278,10 @@ export const MARI_FINDING_COST = {
 // Activities > Drilling Status report — same login-gated, hand-updated pattern as
 // MARI_PRODUCTION_SHARE.
 export const MARI_DRILLING_ACTIVITY = {
-  asOfDate: "Jul 16, 2026",
+  asOfDate: "Jul 23, 2026",
   mariWells: { exploratory: 1, appraisalDevelopment: 3, total: 4 },
   totalWellsNational: 21,
-  topDriller: { name: "OGDCL", wells: 9 },
+  topDriller: { name: "OGDCL", wells: 8 },
   source: "PPIS Upstream Activities · Drilling Status report",
 };
 
