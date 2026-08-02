@@ -14,13 +14,20 @@ import {
 } from "recharts";
 import {
   BDC_TEAM_UPDATES,
+  IMF_PROGRAM,
+  MARI_DIVIDEND,
   MARI_DRILLING_ACTIVITY,
+  MARI_FINDING_COST,
   MARI_NON_OPERATED_GAS_FIELDS,
   MARI_OPERATED_GAS_FIELDS,
   MARI_OPERATORSHIP,
   MARI_PRODUCTION_SHARE,
+  MARI_RESERVES,
+  OIL_IMPORTS_LAST_MONTH,
+  OIL_PRICE_OUTLOOK,
   PsxPeerPricesResponse,
   PSX_PEER_PRICES_POLL_INTERVAL_MS,
+  RECEIVABLES_BY_QUARTER,
 } from "./dashboard-data";
 
 type PricePoint = {
@@ -179,57 +186,9 @@ const MARI_LOGO_URL =
 const KPI_CARD_CLASS =
   "rounded-md border border-mari-gray-light border-t-[3px] border-t-mari-navy bg-mari-gray-bg p-3 shadow-sm transition-shadow duration-150 hover:shadow-md";
 
-// Trade debts (receivables) broken down by counterparty, from the "Transactions and balances
-// with related parties" note in Mari Energies' standalone quarterly reports (marienergies.com.pk/
-// investors-relations/financial-reports). Refineries = Pak Arab Refinery + Pakistan Refinery;
-// Others = Fauji Fertilizer + Foundation Power + Foundation Gas + Central Power Generation +
-// non-related-party "due from others". Not scraped — updated by hand each quarter.
-const RECEIVABLES_BY_QUARTER = [
-  {
-    quarter: "Q1 FY25-26",
-    period: "Sep 30, 2025",
-    sngpl: 69067.0,
-    ssgcl: 9435.2,
-    refineries: 430.8,
-    others: 6964.5,
-    total: 85897.6,
-  },
-  {
-    quarter: "Q2 FY25-26",
-    period: "Dec 31, 2025",
-    sngpl: 71655.3,
-    ssgcl: 9343.9,
-    refineries: 595.2,
-    others: 7171.2,
-    total: 88765.6,
-  },
-  {
-    quarter: "Q3 FY25-26",
-    period: "Mar 31, 2026",
-    sngpl: 73443.6,
-    ssgcl: 10509.7,
-    refineries: 422.3,
-    others: 7676.2,
-    total: 92051.8,
-  },
-];
-
 function fmtMn(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
-
-// Pakistan petroleum import volumes, read directly from OCAC's own Import/Export report
-// (ocac.org.pk/oil-industry-statistics) — the only primary source with real monthly tonnage,
-// though it lags by roughly a month and has no fixed/predictable URL. Not scraped — updated by
-// hand whenever a newer month's row is published and read. LNG import volume and both oil/LNG
-// live prices are not yet wired up (LNG volume has no structured source; prices need an
-// OilPriceAPI key).
-const OIL_IMPORTS_LAST_MONTH = {
-  periodLabel: "May 2026",
-  totalKt: 1198.1,
-  crudeKt: 774.6,
-  source: "OCAC",
-};
 
 function fmtKt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -277,58 +236,6 @@ function OilImportsTile({
     </div>
   );
 }
-
-// Mari Energies' reserves & resources position, from the FY2024-25 Integrated Annual Report
-// ("Reserves & Resources" chapter and the Directors' Report's "Operational KPIs" table). No API
-// for this — updated by hand once a year when the new Annual Report is published. 2P = Proved +
-// Probable reserves (SPE PRMS definitions); 2C = Contingent Resources. RRR (Reserve Replacement
-// Ratio) = reserves added / production that year (110.3 MMBOE added vs 39.7 MMBOE produced =
-// 278%). R/P = Reserves-to-Production ratio, i.e. years of production left at the current rate
-// if no more reserves were ever added.
-const MARI_RESERVES = {
-  asOfDate: "Jun 30, 2025",
-  reserves2pMmboe: { current: 775.0, prior: 704.4 },
-  resources2cMmboe: { current: 177.1, prior: 111.5 },
-  totalReservesAndResourcesMmboe: { current: 952, prior: 816 },
-  reserveReplacementRatioPercent: 278,
-  reservesToProductionYears: { current: 20, prior: 18 },
-  source: "MariEnergies Integrated Annual Report 2025",
-};
-
-// Dividend per share (DPS) and total payout, from the same FY2024-25 Annual Report — the "Rs
-// 21.70" final dividend footnote, cross-checked against Total dividend (Rs 26bn) / shares
-// outstanding (~1.2006bn, from the PSX Equity Profile scrape) = ~21.66/share, consistent within
-// rounding. Yield is computed live against the current PSX share price (mariShare.price), not
-// hardcoded, since the price itself already updates every 5 min elsewhere on this dashboard.
-const MARI_DIVIDEND = {
-  fiscalYearLabel: "FY 2024-25",
-  dividendPerShareRs: 21.70,
-  totalDividendRsBn: 26,
-  source: "MariEnergies Integrated Annual Report 2025",
-};
-
-// Annual finding cost AND finding & development (F&D) cost, both USD per BOE, from the Directors'
-// Report's "Operational KPIs" table (p.251, YoY figures) and the Chairman's Review's "Building a
-// Stronger Resource Base" infographics (p.11-12, 5-year-rolling figures). Finding Cost =
-// exploration spend only, per BOE of reserves added (a pure discovery-efficiency metric); its
-// `prior` here is the YoY FY2023-24 figure (0.9), matching the Operational KPIs table. F&D Cost =
-// finding cost PLUS development capital spend — the broader of the two disclosed metrics, closer
-// to what "should include more than just exploration" means, though still capex-only; the report
-// only discloses it as a 5-year rolling average (2020 vs 2025), so its `prior` here is the 2020
-// baseline (15.38), not a YoY figure — labeled accordingly in the tile rather than implied as YoY.
-// Neither metric includes production/operating (lifting) costs: Mari's Statement of Profit or
-// Loss doesn't break "Operating and administrative expenses" down to a per-BOE figure, and this
-// specific PDF's P&L table has rows/values shifted by one line when extracted as plain text (the
-// same recurring artifact noted elsewhere for this document), so an opex-inclusive number was
-// deliberately not hand-computed from it rather than risk a wrong figure — a genuine all-in
-// operating-cost-per-BOE would need Mari's own disclosure of that split or fresh peer research,
-// neither available this session.
-const MARI_FINDING_COST = {
-  fiscalYearLabel: "FY 2024-25",
-  findingCostUsdPerBoe: { current: 0.8, prior: 0.9 },
-  fdCostUsdPerBoe: { current: 6.46, priorFiveYearBaseline: 15.38 },
-  source: "MariEnergies Integrated Annual Report 2025",
-};
 
 function DonutRing({ percent, color, size }: { percent: number; color: string; size: number }) {
   const data = [
@@ -713,98 +620,6 @@ function GasFieldWellheadPricesKpiTile({
     </div>
   );
 }
-
-// NOT a Claude/Mari prediction — a synthesis of publicly published third-party forecasts (EIA
-// STEO, World Bank, Goldman Sachs, JPMorgan) plus current news, framed as bear/base/bull scenario
-// ranges rather than a single point forecast, since oil-price forecasting is inherently uncertain
-// and doubly so amid the active Iran-Hormuz conflict (started Feb 28, 2026; a mid-June ceasefire
-// broke down Jul 8; as of Jul 24, 2026 Iran's IRGC has declared the Strait "completely closed",
-// Brent settled $100.69 on Jul 23, Hormuz transits are ~10/day vs a 120-140/day pre-war norm, and
-// Houthi attacks have opened a second front in the Red Sea). Update by hand periodically by
-// re-reading current news and forecaster updates — there is no API for this.
-const OIL_PRICE_OUTLOOK = {
-  asOfDate: "Jul 24, 2026",
-  horizonLabel: "Aug 2026 - Jan 2027",
-  contextSummary:
-    "Iran-US conflict over the Strait of Hormuz, active since Feb 28, 2026. A mid-June ceasefire (the Islamabad MOU, mediated in part by Pakistan) broke down on Jul 8. As of Jul 24: Hormuz declared \"completely closed\" by Iran's IRGC, Brent at $100.69 (highest since May 22), Hormuz transits ~10/day vs. ~120-140/day normally, and Houthi attacks have opened a second front in the Red Sea.",
-  scenarios: [
-    {
-      case: "Bear",
-      color: "#6fcf7a",
-      probability: "~20-25%",
-      brentRange: "USD 70-85/bbl",
-      narrative:
-        "A ceasefire is reached and actually holds this time; Hormuz reopens to near-normal traffic within 1-2 months; OPEC+ keeps adding supply (already +188kb/d from Aug); demand growth stays soft.",
-      sources: "EIA Jul 2026 STEO ($81.91 avg 2026, $64.76 avg 2027) · JPMorgan (2027: $64)",
-    },
-    {
-      case: "Base",
-      color: "#4c6f92",
-      probability: "~45-50%",
-      brentRange: "USD 90-105/bbl",
-      narrative:
-        "Conflict continues at similar or somewhat lower intensity through Q3; the war-risk premium stays elevated; only a modest easing by Jan 2027. Timing of real de-escalation is genuinely uncertain — the June ceasefire already broke down once within weeks.",
-      sources: "World Bank stressed-scenario range ($95-115) · H2 2026 consensus cited at $89-99.7 · Goldman Sachs 2026 Q4 base ($80, assumes partial Hormuz normalization)",
-    },
-    {
-      case: "Bull (prices higher)",
-      color: "#e4685d",
-      probability: "~25-30%",
-      brentRange: "USD 105-125/bbl",
-      narrative:
-        "War escalates further or drags on through the full window with no resolution; Hormuz stays effectively closed; further damage to regional energy infrastructure or the new Red Sea front worsens shipping risk. Goldman explicitly flags risk as \"skewed to the upside.\"",
-      sources: "Goldman Sachs (2027: $100 if Hormuz stays disrupted) · tail risk cited up to $166 if the war drags on further",
-    },
-  ],
-  disclaimer:
-    "This is a summary of publicly published third-party forecasts and current news, not a Mari Energies or Claude prediction, model, or investment advice. Oil forecasting is inherently uncertain, especially amid an active regional conflict — treat these as illustrative scenario ranges, not point forecasts, and do not use this for trading or hedging decisions without independent professional advice.",
-  // Illustrative smoothed paths from today's actual Brent price (~$100, matching the Global Oil
-  // Benchmarks tile and the Hormuz badge) to each scenario's stated 6-month range midpoint — NOT
-  // month-by-month figures from any single source (none of the cited forecasters publish a full
-  // monthly path for all three cases). Purely for visualizing the scenario spread over time.
-  trendPath: [
-    { month: "Jul", bear: 100, base: 100, bull: 100 },
-    { month: "Aug", bear: 96, base: 98, bull: 102 },
-    { month: "Sep", bear: 90, base: 97, bull: 106 },
-    { month: "Oct", bear: 85, base: 96, bull: 110 },
-    { month: "Nov", bear: 81, base: 97, bull: 113 },
-    { month: "Dec", bear: 78, base: 98, bull: 115 },
-    { month: "Jan", bear: 77, base: 97, bull: 116 },
-  ],
-};
-
-// Pakistan's IMF EFF + RSF program status, read from IMF press releases (imf.org/en/countries/pak).
-// No live feed exists for this — IMF issues a press release every few months per review, so this is
-// updated by hand whenever a newer review is completed, same pattern as the Mari gas price. The
-// power-sector circular debt figure is the national-level version of the same payment-delay problem
-// behind Mari's own gas-sector receivables (see RECEIVABLES_BY_QUARTER).
-const IMF_PROGRAM = {
-  effTotalUsdBn: 7.0,
-  effMonths: 37,
-  effApproved: "Sep 25, 2024",
-  rsfTotalUsdBn: 1.4,
-  rsfMonths: 28,
-  rsfApproved: "May 9, 2025",
-  latestReviewLabel: "3rd EFF review + 2nd RSF review",
-  latestReviewDate: "May 8, 2026",
-  effTrancheUsdBn: 1.1,
-  rsfTrancheUsdBn: 0.22,
-  totalDisbursedUsdBn: 4.8,
-  totalFacilityUsdBn: 8.4,
-  // From the IMF Staff Report's "Table 8a/8b: Schedule of Reviews and Purchases" — these are
-  // *test dates* tied to performance-criteria data, not disbursement dates. The 3rd review's test
-  // date was Mar 15, 2026 but Board approval/actual disbursement didn't land until May 8, 2026 —
-  // a ~7-8 week lag. Applying that same lag, expect the actual 4th-review announcement around
-  // late Oct-Nov 2026, not exactly on the test date below.
-  nextReviewTestDate: "Sep 15, 2026",
-  nextReviewLabel: "4th EFF review + next RSF disbursement",
-  nextReviewEffUsdBn: 1.1,
-  nextReviewRsfUsdBn: 0.11,
-  nextReviewLagNote: "Test date, not disbursement date — expect actual Board approval ~7-8 weeks later (~late Oct-Nov 2026), based on the 3rd review's lag",
-  circularDebtRsTn: 1.924,
-  circularDebtBanksRsBn: 873,
-  circularDebtAsOf: "end-May 2026",
-};
 
 function ImfProgramTile() {
   const latestTranche = IMF_PROGRAM.effTrancheUsdBn + IMF_PROGRAM.rsfTrancheUsdBn;

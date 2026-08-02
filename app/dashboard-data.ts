@@ -348,7 +348,7 @@ export const OIL_PRICE_OUTLOOK = {
   scenarios: [
     {
       case: "Bear",
-      color: "#10b346",
+      color: "#6fcf7a",
       probability: "~20-25%",
       brentRange: "USD 70-85/bbl",
       narrative:
@@ -357,7 +357,7 @@ export const OIL_PRICE_OUTLOOK = {
     },
     {
       case: "Base",
-      color: "#1e84bc",
+      color: "#4c6f92",
       probability: "~45-50%",
       brentRange: "USD 90-105/bbl",
       narrative:
@@ -367,7 +367,7 @@ export const OIL_PRICE_OUTLOOK = {
     },
     {
       case: "Bull (prices higher)",
-      color: "#de3f39",
+      color: "#e4685d",
       probability: "~25-30%",
       brentRange: "USD 105-125/bbl",
       narrative:
