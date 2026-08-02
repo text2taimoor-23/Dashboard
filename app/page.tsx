@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Cell,
   Line,
@@ -12,6 +12,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  BDC_TEAM_UPDATES,
+  MARI_NON_OPERATED_FIELDS,
+  MARI_OPERATED_FIELDS,
+  MARI_OPERATORSHIP,
+  PsxPeerPricesResponse,
+  PSX_PEER_PRICES_POLL_INTERVAL_MS,
+} from "./dashboard-data";
 
 type PricePoint = {
   code: string;
@@ -167,7 +175,7 @@ const MARI_LOGO_URL =
 // flat white fill, a thin hairline border, a restrained 2px navy top accent instead of a loud
 // colored card, almost no corner radius, no shadow/elevation.
 const KPI_CARD_CLASS =
-  "rounded-md border border-mari-gray-light border-t-[3px] border-t-mari-navy bg-white p-3 shadow-sm transition-shadow duration-150 hover:shadow-md";
+  "rounded-md border border-mari-gray-light border-t-[3px] border-t-mari-navy bg-mari-gray-bg p-3 shadow-sm transition-shadow duration-150 hover:shadow-md";
 
 // Trade debts (receivables) broken down by counterparty, from the "Transactions and balances
 // with related parties" note in Mari Energies' standalone quarterly reports (marienergies.com.pk/
@@ -385,7 +393,7 @@ function DonutRing({ percent, color, size }: { percent: number; color: string; s
             isAnimationActive={false}
           >
             <Cell fill={color} />
-            <Cell fill="#c6ced7" />
+            <Cell fill="#26496e" />
           </Pie>
         </PieChart>
       </ResponsiveContainer>
@@ -483,7 +491,7 @@ function ProductionShareKpiTile({
       <div className="mt-2 flex items-start justify-center gap-4">
         <ProductionShareStat
           percent={oilPercent}
-          color="#10b346"
+          color="#c97c4b"
           label="Oil"
           unit={data.oil.unit}
           topProducer={data.oil.topProducer}
@@ -492,7 +500,7 @@ function ProductionShareKpiTile({
         />
         <ProductionShareStat
           percent={gasPercent}
-          color="#1e84bc"
+          color="#8facc6"
           label="Gas"
           unit={data.gas.unit}
           topProducer={data.gas.topProducer}
@@ -627,6 +635,108 @@ function DrillingActivityKpiTile({ data }: { data: typeof MARI_DRILLING_ACTIVITY
   );
 }
 
+function OperatorshipKpiTile({ data }: { data: typeof MARI_OPERATORSHIP }) {
+  const operatedPercent = (data.operated.total / data.totalAssets) * 100;
+  const operatedExploration = data.operated.explorationOnshore + data.operated.explorationOffshore;
+  const nonOperatedExploration = data.nonOperated.explorationOnshore + data.nonOperated.explorationOffshore;
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
+        Operatorship
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; blocks &amp; leases</span>
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <DonutRing percent={operatedPercent} color="#c97c4b" size={64} />
+        <div className="text-xs leading-tight">
+          <div className="font-semibold text-mari-navy">{data.operated.total} Operated</div>
+          <div className="text-foreground/60">{data.nonOperated.total} Non-Operated</div>
+          <div className="mt-0.5 text-foreground/40">of {data.totalAssets} total assets</div>
+        </div>
+      </div>
+      <div className="mt-2 space-y-1 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">Exploration Licenses</span>
+          <span className="font-medium text-mari-navy">
+            {operatedExploration} op. / {nonOperatedExploration} non-op.
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-foreground/60">D&amp;P Leases</span>
+          <span className="font-medium text-mari-navy">
+            {data.operated.dpLeases} op. / {data.nonOperated.dpLeases} non-op.
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 text-[10px] text-foreground/40">
+        Source: {data.source} &middot; as of {data.asOfDate}, updated by hand
+      </div>
+    </div>
+  );
+}
+
+// Field-level list of Mari's operated/non-operated D&P leases (see MARI_OPERATED_FIELDS /
+// MARI_NON_OPERATED_FIELDS for sourcing), paired with Mari Field's own wellhead price status —
+// the only one of these 15 fields with a verifiable price, since OGRA's notification site
+// (ogra.org.pk/well-head-gas-prices) no longer resolves. Reuses the same `mari` state (lastVerified
+// + nextPeriod.notified) already powering GasComboTile, so the Pending/Notified badge here always
+// matches that tile.
+function OperatedFieldsKpiTile({
+  operatedFields,
+  nonOperatedFields,
+  mari,
+}: {
+  operatedFields: string[];
+  nonOperatedFields: string[];
+  mari: MariApiResponse | null;
+}) {
+  const lastVerified = mari?.lastVerified;
+  const nextPeriod = mari?.nextPeriod;
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
+        Operated Fields
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; wellhead price status</span>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 rounded-sm bg-mari-navy/10 px-2 py-1.5">
+        <div>
+          <div className="text-xs font-semibold text-mari-navy">Mari Field &middot; {nextPeriod?.periodShort ?? "next period"}</div>
+          <div className="text-[10px] text-foreground/50">
+            {typeof lastVerified?.benchmark?.value === "number"
+              ? `Last notified: ${lastVerified.benchmark.value.toFixed(2)} PKR/MMBTU (${lastVerified.periodShort})`
+              : "Loading…"}
+          </div>
+        </div>
+        {nextPeriod?.notified ? <StatusPill status="good" label="Notified" /> : <PendingBadge />}
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+        <div>
+          <div className="font-medium uppercase tracking-wide text-foreground/50">Operated ({operatedFields.length})</div>
+          <ul className="mt-1 space-y-0.5 text-foreground/70">
+            {operatedFields.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <div className="font-medium uppercase tracking-wide text-foreground/50">Non-Operated ({nonOperatedFields.length})</div>
+          <ul className="mt-1 space-y-0.5 text-foreground/70">
+            {nonOperatedFields.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div className="mt-2 text-[10px] leading-snug text-foreground/40">
+        Field names: MariEnergies Concession Map. Only Mari Field has a hand-verified wellhead
+        price — OGRA&apos;s notification site is currently unreachable, so no price is shown for
+        the other fields rather than guessing.
+      </div>
+    </div>
+  );
+}
+
 // NOT a Claude/Mari prediction — a synthesis of publicly published third-party forecasts (EIA
 // STEO, World Bank, Goldman Sachs, JPMorgan) plus current news, framed as bear/base/bull scenario
 // ranges rather than a single point forecast, since oil-price forecasting is inherently uncertain
@@ -643,7 +753,7 @@ const OIL_PRICE_OUTLOOK = {
   scenarios: [
     {
       case: "Bear",
-      color: "#10b346",
+      color: "#6fcf7a",
       probability: "~20-25%",
       brentRange: "USD 70-85/bbl",
       narrative:
@@ -652,7 +762,7 @@ const OIL_PRICE_OUTLOOK = {
     },
     {
       case: "Base",
-      color: "#1e84bc",
+      color: "#8facc6",
       probability: "~45-50%",
       brentRange: "USD 90-105/bbl",
       narrative:
@@ -661,7 +771,7 @@ const OIL_PRICE_OUTLOOK = {
     },
     {
       case: "Bull (prices higher)",
-      color: "#de3f39",
+      color: "#e4685d",
       probability: "~25-30%",
       brentRange: "USD 105-125/bbl",
       narrative:
@@ -771,49 +881,6 @@ function ImfProgramTile() {
   );
 }
 
-function GlobalOilBenchmarksTile({ benchmarks, error }: { benchmarks?: OilBenchmark[]; error: string | null }) {
-  return (
-    <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
-        Global Oil Benchmarks
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/barrel</span>
-      </div>
-      {error && !benchmarks && <div className="mt-2 text-xs text-status-critical">{error}</div>}
-      {benchmarks && (
-        <div className="mt-2 space-y-1.5 text-sm">
-          {benchmarks.map((b) => {
-            const isUp = (b.changePercent ?? 0) > 0;
-            const isDown = (b.changePercent ?? 0) < 0;
-            const changeColor = isUp ? "text-status-good" : isDown ? "text-status-critical" : "text-foreground/50";
-            return (
-              <div key={b.code} className="flex items-center justify-between">
-                <span className="text-foreground/60">{b.label}</span>
-                {typeof b.price === "number" ? (
-                  <span className="flex items-baseline gap-2">
-                    <span className="w-14 text-right font-medium tabular-nums text-mari-navy">
-                      {b.price.toFixed(2)}
-                    </span>
-                    <span className={`w-16 text-right text-xs font-medium tabular-nums ${changeColor}`}>
-                      {typeof b.changePercent === "number"
-                        ? `${isUp ? "▲" : isDown ? "▼" : "—"} ${Math.abs(b.changePercent).toFixed(2)}%`
-                        : ""}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-foreground/40">—</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <div className="mt-2 text-[10px] text-foreground/40">
-        Source: oilprice.com &middot; Arab Light is the daily market estimate, not the monthly Aramco OSP
-      </div>
-    </div>
-  );
-}
-
 function NewsTickerTile({
   heading,
   subheading,
@@ -869,6 +936,124 @@ function NewsTickerTile({
   );
 }
 
+// One unified scrolling ticker for every "live price" figure on the dashboard — PSX quotes
+// (Mari/OGDCL/PPL/Pakistan Oilfields, via /api/psx-peer-prices — PSX's own numbers, not a
+// third-party feed), Petrol & HSD, USD/PKR, and the six global oil benchmarks. Replaces the
+// former TradingView ticker-tape widget and a separate PSX-only ticker — those Petrol/HSD, USD/
+// PKR, and Global Oil Benchmarks figures used to live in their own KPI tiles, which were removed
+// once their data moved here, per explicit request.
+function LiveTicker({
+  psxPeerPrices,
+  petrol,
+  hsd,
+  pkrUsd,
+  oilBenchmarks,
+}: {
+  psxPeerPrices: PsxPeerPricesResponse | null;
+  petrol?: PricePoint;
+  hsd?: PricePoint;
+  pkrUsd: PkrUsdResponse | null;
+  oilBenchmarks: GlobalOilBenchmarksResponse | null;
+}) {
+  type Chip = { label: string; value: string; changeText?: string; changeColor?: string };
+  const chips: Chip[] = [];
+
+  (psxPeerPrices?.quotes ?? []).forEach((q) => {
+    const isUp = q.direction === "up";
+    const isDown = q.direction === "down";
+    chips.push({
+      label: q.companyName,
+      value: q.price.toFixed(2),
+      changeText: `${isUp ? "▲" : isDown ? "▼" : "—"} ${Math.abs(q.change).toFixed(2)}${
+        typeof q.changePercent === "number" ? ` (${Math.abs(q.changePercent).toFixed(2)}%)` : ""
+      }`,
+      changeColor: isUp ? "text-status-good" : isDown ? "text-status-critical" : "text-foreground/50",
+    });
+  });
+
+  if (petrol) chips.push({ label: "Petrol", value: `${petrol.currency} ${petrol.price.toFixed(2)}/${petrol.unit}` });
+  if (hsd) chips.push({ label: "HSD", value: `${hsd.currency} ${hsd.price.toFixed(2)}/${hsd.unit}` });
+  if (typeof pkrUsd?.pkrPerUsd === "number") {
+    chips.push({ label: "USD/PKR", value: pkrUsd.pkrPerUsd.toFixed(2) });
+  }
+
+  (oilBenchmarks?.benchmarks ?? []).forEach((b) => {
+    if (typeof b.price !== "number") return;
+    const isUp = (b.changePercent ?? 0) > 0;
+    const isDown = (b.changePercent ?? 0) < 0;
+    chips.push({
+      label: b.label,
+      value: b.price.toFixed(2),
+      changeText:
+        typeof b.changePercent === "number"
+          ? `${isUp ? "▲" : isDown ? "▼" : "—"} ${Math.abs(b.changePercent).toFixed(2)}%`
+          : undefined,
+      changeColor: isUp ? "text-status-good" : isDown ? "text-status-critical" : "text-foreground/50",
+    });
+  });
+
+  if (chips.length === 0) {
+    return (
+      <div className="rounded-md border border-mari-gray-light bg-mari-gray-bg px-3 py-2 text-xs text-foreground/40">
+        Loading live prices…
+      </div>
+    );
+  }
+
+  const doubled = [...chips, ...chips];
+
+  return (
+    <div className="flex items-stretch overflow-hidden rounded-md border border-mari-gray-light bg-mari-gray-bg">
+      <div className="flex-shrink-0 self-center px-3 text-[10px] font-extrabold uppercase tracking-wide text-mari-blue">
+        LIVE
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <div
+          className="animate-marquee-horizontal inline-flex w-max items-center gap-8 whitespace-nowrap py-2 pl-[100%] text-sm hover:[animation-play-state:paused]"
+          style={{ animationDuration: "110s" }}
+        >
+          {doubled.map((c, i) => (
+            <span key={i} className="flex items-baseline gap-1.5">
+              <span className="font-semibold text-foreground/70">{c.label}</span>
+              <span className="font-semibold text-mari-navy">{c.value}</span>
+              {c.changeText && <span className={`text-xs font-medium ${c.changeColor}`}>{c.changeText}</span>}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// A single-line horizontal marquee for the BDC team's own internal announcements (see
+// BDC_TEAM_UPDATES in app/dashboard-data.ts) — separate from the vertical PSX/PPIS news tickers
+// above, since this is hand-authored department content, not scraped from any source.
+function BdcUpdateBar({ updates }: { updates: { date: string; text: string }[] }) {
+  if (updates.length === 0) return null;
+  const doubled = [...updates, ...updates];
+
+  return (
+    <div className="mt-4 flex items-stretch overflow-hidden border-t-[3px] border-mari-navy bg-mari-gray-bg">
+      <div className="flex-shrink-0 bg-mari-green px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-background">
+        BDC Update
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <div
+          className="animate-marquee-horizontal inline-flex w-max items-center gap-14 whitespace-nowrap py-2 pl-[100%] text-sm text-foreground hover:[animation-play-state:paused]"
+          style={{ animationDuration: "90s" }}
+        >
+          {doubled.map((u, i) => (
+            <span key={i}>
+              &#9670; {u.date !== "—" && <span className="text-foreground/50">{u.date} &mdash; </span>}
+              {u.text}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LiveBadge({ isLive }: { isLive: boolean }) {
   if (isLive) {
     return (
@@ -893,7 +1078,7 @@ function LiveBadge({ isLive }: { isLive: boolean }) {
 function StatusPill({ status, label }: { status: "good" | "warning" | "critical" | "neutral"; label: string }) {
   const styles: Record<typeof status, string> = {
     good: "bg-status-good/10 text-status-good",
-    warning: "bg-status-warning/15 text-amber-700",
+    warning: "bg-status-warning/15 text-status-warning",
     critical: "bg-status-critical/10 text-status-critical",
     neutral: "bg-mari-gray-light/40 text-foreground/60",
   };
@@ -914,7 +1099,7 @@ function StatusPill({ status, label }: { status: "good" | "warning" | "critical"
 
 function PendingBadge() {
   return (
-    <span className="inline-flex animate-pulse items-center gap-1.5 rounded-sm bg-status-warning/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+    <span className="inline-flex animate-pulse items-center gap-1.5 rounded-sm bg-status-warning/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-status-warning">
       <span className="h-1.5 w-1.5 rounded-full bg-status-warning" />
       Pending
     </span>
@@ -968,53 +1153,6 @@ function HormuzStatusBadge({ data, error }: { data: HormuzStatusResponse | null;
   );
 }
 
-function FuelComboTile({
-  petrol,
-  hsd,
-  pkrPerUsd,
-}: {
-  petrol?: PricePoint;
-  hsd?: PricePoint;
-  pkrPerUsd?: number;
-}) {
-  if (!petrol && !hsd) return null;
-  const unit = petrol?.unit ?? hsd?.unit;
-  const currency = petrol?.currency ?? hsd?.currency;
-
-  return (
-    <div className={KPI_CARD_CLASS}>
-      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
-        Petrol &amp; HSD
-        {currency && unit && (
-          <span className="ml-1 font-normal normal-case text-foreground/40">
-            &middot; {currency}/{unit}
-          </span>
-        )}
-      </div>
-      <div className="mt-2 flex items-end gap-4">
-        {petrol && (
-          <div>
-            <div className="text-2xl font-semibold text-mari-navy">{petrol.price.toFixed(2)}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">Petrol</div>
-          </div>
-        )}
-        {petrol && hsd && <div className="h-8 w-px self-stretch bg-mari-gray-light/60" />}
-        {hsd && (
-          <div>
-            <div className="text-2xl font-semibold text-mari-navy">{hsd.price.toFixed(2)}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">HSD</div>
-          </div>
-        )}
-      </div>
-      {typeof pkrPerUsd === "number" && (
-        <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-xs">
-          <span className="text-foreground/60">PKR/USD</span>
-          <span className="font-medium text-mari-navy">{pkrPerUsd.toFixed(2)}</span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function GasComboTile({
   benchmark,
@@ -1163,13 +1301,13 @@ function ReceivablesByQuarter() {
 function OilPriceOutlook() {
   return (
     <div>
-      <div className="rounded-sm border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900">
+      <div className="rounded-sm border border-status-warning/40 bg-status-warning/10 p-2.5 text-xs text-foreground">
         <strong className="font-semibold">Not a prediction.</strong> {OIL_PRICE_OUTLOOK.disclaimer}
       </div>
       <p className="mt-3 text-xs text-foreground/70">{OIL_PRICE_OUTLOOK.contextSummary}</p>
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {OIL_PRICE_OUTLOOK.scenarios.map((s) => (
-          <div key={s.case} className="rounded-sm border border-mari-gray-light border-t-2 bg-white p-3" style={{ borderTopColor: s.color }}>
+          <div key={s.case} className="rounded-sm border border-mari-gray-light border-t-2 bg-mari-gray-bg p-3" style={{ borderTopColor: s.color }}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-foreground/70">{s.case}</span>
               <span className="text-[10px] text-foreground/40">{s.probability}</span>
@@ -1195,15 +1333,23 @@ function OilOutlookTrendTile() {
       <div className="mt-1 h-20 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={OIL_PRICE_OUTLOOK.trendPath} margin={{ top: 2, right: 2, left: -30, bottom: 0 }}>
-            <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#58595b" }} axisLine={false} tickLine={false} interval={1} />
-            <YAxis tick={{ fontSize: 9, fill: "#58595b" }} axisLine={false} tickLine={false} domain={[60, 130]} width={26} />
+            <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#8facc6" }} axisLine={false} tickLine={false} interval={1} />
+            <YAxis tick={{ fontSize: 9, fill: "#8facc6" }} axisLine={false} tickLine={false} domain={[60, 130]} width={26} />
             <Tooltip
               formatter={(value, name) => [`$${value}`, name]}
-              contentStyle={{ fontSize: 10, borderRadius: 2, borderColor: "#c6ced7" }}
+              contentStyle={{
+                fontSize: 10,
+                borderRadius: 2,
+                background: "#153e62",
+                borderColor: "#26496e",
+                color: "#eaf2fa",
+              }}
+              itemStyle={{ color: "#eaf2fa" }}
+              labelStyle={{ color: "#8facc6" }}
             />
-            <Line type="monotone" dataKey="bull" name="Bull" stroke="#de3f39" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="base" name="Base" stroke="#1e84bc" strokeWidth={2} dot={false} isAnimationActive={false} />
-            <Line type="monotone" dataKey="bear" name="Bear" stroke="#10b346" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="bull" name="Bull" stroke="#e4685d" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="base" name="Base" stroke="#8facc6" strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="bear" name="Bear" stroke="#6fcf7a" strokeWidth={1.5} strokeDasharray="3 2" dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -1250,7 +1396,7 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={`flex flex-col rounded-sm border border-mari-gray-light bg-white p-4 ${className ?? ""}`}>
+    <div className={`flex flex-col rounded-sm border border-mari-gray-light bg-mari-gray-bg p-4 ${className ?? ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold tracking-tight text-mari-navy">{title}</h2>
         {badge}
@@ -1331,6 +1477,8 @@ export default function Home() {
   const [ppisNewsError, setPpisNewsError] = useState<string | null>(null);
   const [pkrUsd, setPkrUsd] = useState<PkrUsdResponse | null>(null);
   const [pkrUsdError, setPkrUsdError] = useState<string | null>(null);
+  const [psxPeerPrices, setPsxPeerPrices] = useState<PsxPeerPricesResponse | null>(null);
+  const [psxPeerPricesError, setPsxPeerPricesError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -1611,21 +1759,62 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchPsxPeerPrices() {
+      try {
+        const res = await fetch("/api/psx-peer-prices", { cache: "no-store" });
+        const data: PsxPeerPricesResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || (!data.quotes && data.error)) {
+          setPsxPeerPricesError(data.error ?? "Failed to fetch PSX peer prices");
+          return;
+        }
+
+        setPsxPeerPricesError(data.error ?? null);
+        setPsxPeerPrices(data);
+      } catch {
+        if (!cancelled) setPsxPeerPricesError("Network error while fetching PSX peer prices");
+      }
+    }
+
+    fetchPsxPeerPrices();
+    const interval = setInterval(fetchPsxPeerPrices, PSX_PEER_PRICES_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const petrol = prices.find((p) => p.code === "PETROL");
   const hsd = prices.find((p) => p.code === "HSD");
   const lastVerifiedGas = mari?.lastVerified;
   const overallLive = !error && !mariShareError && prices.length > 0 && typeof mariShare?.price === "number";
 
   return (
-    <div className="flex min-h-screen flex-col bg-mari-gray-bg">
-      <header className="border-b-[3px] border-mari-green bg-gradient-to-r from-mari-navy via-mari-navy to-[#0d3a70] shadow-md">
-        <div className="mx-auto flex max-w-[1800px] items-center gap-4 px-4 py-2.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-7 w-auto" />
-          <div className="h-5 w-px bg-white/25" />
-          <span className="text-xs font-extrabold uppercase tracking-widest text-white">
-            BDC Dashboard
-          </span>
+    <div className="flex min-h-screen flex-col bg-background">
+      <header className="border-b-[3px] border-mari-navy bg-gradient-to-r from-background to-mari-gray-bg shadow-md">
+        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-4 px-4 py-2.5">
+          <div className="flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={MARI_LOGO_URL} alt="Mari Energies" className="h-7 w-auto" />
+            <div className="h-5 w-px bg-white/25" />
+            <span className="text-xs font-extrabold uppercase tracking-widest text-white">
+              BDC Dashboard
+            </span>
+          </div>
+          {/* View controls — show/hide for everything below the KPI strip. Moved here from
+              beneath the Overview heading so that row is free for just the ticker tape. */}
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            className="rounded-sm border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+          >
+            {showDetails ? "Hide full report ▲" : "Show full report ▼"}
+          </button>
         </div>
       </header>
 
@@ -1643,15 +1832,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* View controls — show/hide for everything below the KPI strip */}
-        <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setShowDetails((v) => !v)}
-            className="rounded-sm border border-mari-gray-light bg-white px-3 py-1 text-xs font-medium uppercase tracking-wider text-foreground/60 transition-colors hover:text-mari-navy"
-          >
-            {showDetails ? "Hide full report ▲" : "Show full report ▼"}
-          </button>
+        <div className="mt-3">
+          <LiveTicker psxPeerPrices={psxPeerPrices} petrol={petrol} hsd={hsd} pkrUsd={pkrUsd} oilBenchmarks={oilBenchmarks} />
         </div>
 
         {/* KPI strip, row 1 — per the user's explicit 2026-07-27 ordering request (Mari Share
@@ -1703,14 +1885,12 @@ export default function Home() {
           />
         </div>
 
-        {/* KPI strip, row 2 — final order after two follow-up swap requests: Global Oil Price,
-            Price Outlook, Petrol & HSD, Receivables (swapped in from row 1's former PSX
-            Announcements slot), then PPIS Sector News (its slot swapped with Receivables' once
-            more, landing PPIS last). */}
+        {/* KPI strip, row 2 — Global Oil Benchmarks and Petrol & HSD (+ PKR/USD) were removed
+            from here once their data moved into the top LiveTicker, per explicit request; the
+            remaining tiles keep their prior relative order (Price Outlook, Receivables swapped
+            in from row 1's former PSX Announcements slot, then PPIS Sector News). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <GlobalOilBenchmarksTile benchmarks={oilBenchmarks?.benchmarks} error={oilBenchmarksError} />
           <OilOutlookTrendTile />
-          <FuelComboTile petrol={petrol} hsd={hsd} pkrPerUsd={pkrUsd?.pkrPerUsd} />
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
           <NewsTickerTile
             heading="E&P Updates"
@@ -1723,13 +1903,25 @@ export default function Home() {
 
         {/* KPI strip, row 3 — the remaining tiles not named in the user's explicit ordering:
             Mari's annual-snapshot financial-depth figures and the laggier external/macro context,
-            all past/periodic rather than live. LNG import volume still pending (see note above
+            all past/periodic rather than live. Operatorship added per a later request, sourced
+            from Mari's own Concession Map. LNG import volume still pending (see note above
             OIL_IMPORTS_LAST_MONTH). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <ReservesKpiTile data={MARI_RESERVES} />
+          <OperatorshipKpiTile data={MARI_OPERATORSHIP} />
           <FindingCostKpiTile data={MARI_FINDING_COST} />
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <ImfProgramTile />
+        </div>
+
+        {/* KPI strip, row 4 — field-level detail behind row 3's Operatorship summary, added per a
+            follow-up request. Only 1 tile; partial row is fine. */}
+        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
+          <OperatedFieldsKpiTile
+            operatedFields={MARI_OPERATED_FIELDS}
+            nonOperatedFields={MARI_NON_OPERATED_FIELDS}
+            mari={mari}
+          />
         </div>
 
         {showDetails && (
@@ -1891,14 +2083,14 @@ export default function Home() {
                 mariValue={MARI_PRODUCTION_SHARE.oil.mariBbl}
                 totalValue={MARI_PRODUCTION_SHARE.oil.totalBbl}
                 unit={MARI_PRODUCTION_SHARE.oil.unit}
-                color="#10b346"
+                color="#c97c4b"
               />
               <ProductionShareDonut
                 label="Gas"
                 mariValue={MARI_PRODUCTION_SHARE.gas.mariMmcft}
                 totalValue={MARI_PRODUCTION_SHARE.gas.totalMmcft}
                 unit={MARI_PRODUCTION_SHARE.gas.unit}
-                color="#1e84bc"
+                color="#8facc6"
               />
             </div>
             <p className="mt-3 text-xs text-foreground/50">
@@ -1983,8 +2175,10 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="mt-4 border-t-[3px] border-mari-green bg-mari-navy">
-        <div className="mx-auto max-w-[1800px] px-4 py-2 text-xs font-medium text-white/70">
+      <BdcUpdateBar updates={BDC_TEAM_UPDATES} />
+
+      <footer className="border-t-[3px] border-mari-navy bg-mari-gray-bg">
+        <div className="mx-auto max-w-[1800px] px-4 py-2 text-xs font-medium text-foreground/70">
           &copy; {new Date().getUTCFullYear()} MariEnergies BDC Department Internal Dashboard
         </div>
       </footer>

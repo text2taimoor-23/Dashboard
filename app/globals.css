@@ -1,19 +1,27 @@
 @import "tailwindcss";
 
-/* Pulled directly from marienergies.com.pk's own numbered utility classes (.bg-blue1..14,
-   .bg-green1..8, .bg-grey1..7, .bg-red1, .bg-yellow1) rather than approximated by eye — see the
-   "Mari brand color scheme" note in CLAUDE.md for how these were sourced (2026-07-27). */
+/* DRAFT — "engineering blueprint" dark theme, ported from the user-supplied
+   mari_bdc_dashboard_blueprint.html template's color tokens (deep navy blueprint-grid
+   background, copper/safety-yellow accents, muted blue-gray secondary text). This replaces the
+   prior light "Power BI report" palette (sourced from marienergies.com.pk's own brand swatches,
+   see git history) at the user's request — kept local/unpublished until approved. Role mapping:
+   --mari-navy (previously the brand navy ink/accent) now carries the template's --copper role
+   (headings, key numbers, top-accent borders); --mari-green now carries --safety (secondary
+   accent / "Total" emphasis); --mari-blue now carries --muted (de-emphasized secondary accent);
+   --mari-gray-bg is repurposed from "page background" to "card/panel background" (the page
+   background itself is --background); --mari-gray-light becomes a solid mid-navy border instead
+   of a light gray hairline. */
 :root {
-  --background: #ffffff;
-  --foreground: #58595b; /* .bg-grey2 / body text on marienergies.com.pk */
-  --mari-navy: #18488c; /* .bg-blue1 — their primary chrome color: nav, category badges, pagination */
-  --mari-green: #10b346; /* .bg-green4 — their active/brand accent green (e.g. currency switcher) */
-  --mari-blue: #1e84bc; /* .bg-blue5 — their secondary accent blue (e.g. back-to-top button) */
-  --mari-gray-light: #c6ced7; /* .bg-grey7 */
-  --mari-gray-bg: #f9f9f9; /* .bg-grey5 */
-  --status-good: #10b346; /* .bg-green4, reused — no separate "positive" swatch on their site */
-  --status-warning: #fabd3a; /* .bg-yellow1 */
-  --status-critical: #de3f39; /* .bg-red1 */
+  --background: #0f3654; /* blue-deep — page background */
+  --foreground: #eaf2fa; /* paper — primary text, now light-on-dark */
+  --mari-navy: #c97c4b; /* copper — headings, key numbers, top-accent borders */
+  --mari-green: #e4b73c; /* safety — secondary accent, "Total" emphasis, live indicators */
+  --mari-blue: #8facc6; /* muted — de-emphasized secondary accent */
+  --mari-gray-light: #26496e; /* mid-navy border, replacing the light-gray hairline */
+  --mari-gray-bg: #153e62; /* blue-panel — card/panel background (was page background) */
+  --status-good: #6fcf7a;
+  --status-warning: #e4b73c;
+  --status-critical: #e4685d;
 }
 
 @theme inline {
@@ -49,8 +57,22 @@ body {
   animation: marquee-vertical 60s linear infinite;
 }
 
+@keyframes marquee-horizontal {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee-horizontal {
+  animation: marquee-horizontal 45s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee-vertical {
+  .animate-marquee-vertical,
+  .animate-marquee-horizontal {
     animation: none;
   }
 }

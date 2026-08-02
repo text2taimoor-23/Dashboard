@@ -1,0 +1,497 @@
+/* ============ DESIGN TOKENS — ENGINEERING BLUEPRINT ============
+   Adapted from the user-supplied mari_bdc_dashboard_blueprint.html template. Scoped to the
+   /blueprint route only (imported only by app/blueprint/page.tsx) — does not affect the main
+   dashboard's theme in app/globals.css. */
+.bp-root {
+  --blue-deep: #0f3654;
+  --blue-panel: #153e62;
+  --blue-panel-alt: #123a5c;
+  --blue-line: rgba(234, 242, 250, 0.16);
+  --paper: #eaf2fa;
+  --copper: #c97c4b;
+  --safety: #e4b73c;
+  --muted: #8facc6;
+  --good: #6fcf7a;
+  --bad: #e4685d;
+}
+
+.bp-root * {
+  box-sizing: border-box;
+}
+.bp-root {
+  font-size: clamp(14px, 1vw, 19px);
+  margin: 0;
+  color: var(--paper);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  background-color: var(--blue-deep);
+  background-image: linear-gradient(var(--blue-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--blue-line) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.bp-dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---- registration crosshair corner marks ---- */
+.bp-regmark {
+  position: relative;
+}
+.bp-regmark::before,
+.bp-regmark::after {
+  content: "";
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  opacity: 0.55;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='9' fill='none' stroke='%23EAF2FA' stroke-width='1.3'/><line x1='12' y1='0' x2='12' y2='24' stroke='%23EAF2FA' stroke-width='1.3'/><line x1='0' y1='12' x2='24' y2='12' stroke='%23EAF2FA' stroke-width='1.3'/></svg>");
+}
+.bp-regmark::before {
+  top: 6px;
+  left: 6px;
+}
+.bp-regmark::after {
+  bottom: 6px;
+  right: 6px;
+}
+
+/* ---- title block (engineering drawing convention) ---- */
+.bp-title-block {
+  margin-top: auto;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--blue-line);
+  display: flex;
+  gap: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.bp-title-block div {
+  display: flex;
+  flex-direction: column;
+}
+.bp-title-block b {
+  color: var(--paper);
+  font-size: 0.72rem;
+}
+
+/* ============ TOP BAR ============ */
+.bp-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.8rem;
+  border-bottom: 2px solid var(--copper);
+  background: linear-gradient(180deg, #123a5c, #0f3654);
+}
+.bp-brand-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.bp-brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 2.2vw, 2.3rem);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.bp-brand-name span {
+  color: var(--copper);
+}
+.bp-brand-sub {
+  font-family: var(--font-mono);
+  font-size: clamp(0.66rem, 0.85vw, 0.82rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.bp-time-block {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.bp-clock {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 2.6vw, 2.6rem);
+}
+.bp-date-row {
+  font-family: var(--font-body);
+  font-size: clamp(0.75rem, 0.95vw, 0.95rem);
+  color: var(--muted);
+}
+.bp-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--safety);
+  margin-top: 3px;
+}
+.bp-live-tag.is-critical {
+  color: var(--bad);
+}
+.bp-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--safety);
+  box-shadow: 0 0 6px var(--safety);
+  animation: bp-pulse 2.2s ease-in-out infinite;
+}
+.bp-live-tag.is-critical .bp-live-dot {
+  background: var(--bad);
+  box-shadow: 0 0 6px var(--bad);
+}
+@keyframes bp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ============ TICKER ============ */
+.bp-ticker-wrap {
+  border-bottom: 1px solid var(--blue-line);
+  background: #0c2e48;
+  min-height: 46px;
+}
+
+/* ============ STAT ROW ============ */
+.bp-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--blue-line);
+  border-bottom: 1px solid var(--blue-line);
+}
+.bp-stat-card {
+  background: var(--blue-panel);
+  padding: 1rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.bp-stat-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.bp-stat-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 2vw, 2rem);
+}
+.bp-stat-sub {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.bp-tag-live {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--safety);
+  border: 1px solid var(--safety);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+.bp-tag-sample {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border: 1px solid var(--blue-line);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+
+/* ============ MAIN GRID ============
+   Opened up from the template's fixed 3-column layout to auto-fit however many panels a
+   section needs — the source template only had 3 sample panels; this dashboard has 14 real
+   KPIs across 3 sections. */
+.bp-section-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--safety);
+  padding: 0.6rem 1.8rem 0.3rem;
+  background: var(--blue-deep);
+}
+.bp-grid-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  background: var(--blue-line);
+}
+.bp-panel {
+  background: var(--blue-panel);
+  padding: 1.1rem 1.3rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.bp-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--blue-line);
+  gap: 0.5rem;
+}
+.bp-panel-eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+.bp-panel-eyebrow small {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.bp-sheet-num {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.bp-hero {
+  text-align: left;
+  padding: 0.1rem 0 0.7rem;
+}
+.bp-hero-number {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 2.6vw, 2.2rem);
+  color: var(--paper);
+  line-height: 1;
+}
+.bp-hero-number.accent {
+  color: var(--safety);
+}
+.bp-hero-unit {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-left: 0.3rem;
+}
+.bp-hero-delta {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+}
+.bp-hero-delta.good {
+  color: var(--good);
+}
+.bp-hero-delta.bad {
+  color: var(--bad);
+}
+.bp-hero-caption {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+
+.bp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.42rem 0;
+  border-bottom: 1px dashed var(--blue-line);
+  font-size: 0.85rem;
+}
+.bp-row:last-child {
+  border-bottom: none;
+}
+.bp-row .k {
+  color: var(--muted);
+}
+.bp-row .v {
+  font-family: var(--font-mono);
+  color: var(--paper);
+  text-align: right;
+}
+.bp-row.total .v {
+  color: var(--copper);
+  font-weight: 700;
+}
+
+.bp-pill {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+  border: 1px solid currentColor;
+}
+.bp-pill.urgent {
+  background: rgba(228, 104, 93, 0.15);
+  color: var(--bad);
+}
+.bp-pill.soon {
+  background: rgba(228, 183, 60, 0.15);
+  color: var(--safety);
+}
+.bp-pill.normal {
+  background: rgba(111, 207, 122, 0.12);
+  color: var(--good);
+}
+
+.bp-panel-note {
+  margin-top: 0.6rem;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.bp-donut-row {
+  display: flex;
+  gap: 1.1rem;
+  justify-content: center;
+  padding: 0.2rem 0 0.4rem;
+}
+
+/* ============ VALVE / PIPELINE DIVIDER (signature) ============ */
+.bp-pipeline-divider {
+  background: var(--blue-deep);
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--blue-line);
+}
+.bp-pipeline-divider svg {
+  display: block;
+  width: 100%;
+  height: 34px;
+}
+.bp-pipe-line {
+  stroke: var(--muted);
+  stroke-width: 2;
+  opacity: 0.5;
+}
+.bp-flange {
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  fill: var(--blue-panel);
+  opacity: 0.7;
+}
+.bp-valve-body {
+  stroke: var(--copper);
+  stroke-width: 1.6;
+  fill: none;
+}
+.bp-valve-spoke {
+  stroke: var(--copper);
+  stroke-width: 1.4;
+}
+
+/* ============ NOTICE MARQUEE ============ */
+.bp-notice-bar {
+  display: flex;
+  align-items: center;
+  background: var(--blue-panel-alt);
+  border-top: 2px solid var(--copper);
+  overflow: hidden;
+}
+.bp-notice-label {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--blue-deep);
+  background: var(--safety);
+  padding: 0.65rem 1.1rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.bp-marquee-track {
+  white-space: nowrap;
+  display: inline-block;
+  padding-left: 100%;
+  animation: bp-scroll-left 48s linear infinite;
+  font-size: 0.85rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+.bp-marquee-track a {
+  margin-right: 3.5rem;
+  color: var(--paper);
+  text-decoration: none;
+}
+.bp-marquee-track a:hover {
+  text-decoration: underline;
+}
+@keyframes bp-scroll-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-marquee-track {
+    animation: none;
+    padding-left: 1.1rem;
+  }
+  .bp-live-dot {
+    animation: none;
+  }
+}
+@media (max-width: 980px) {
+  .bp-stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---- draft banner (this session's addition, not part of the source template) ---- */
+.bp-draft-banner {
+  background: var(--safety);
+  color: var(--blue-deep);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.5rem 1rem;
+}
