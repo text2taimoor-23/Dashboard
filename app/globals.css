@@ -12,16 +12,24 @@
    background itself is --background); --mari-gray-light becomes a solid mid-navy border instead
    of a light gray hairline. */
 :root {
-  --background: #0f3654; /* blue-deep — page background */
-  --foreground: #eaf2fa; /* paper — primary text, now light-on-dark */
-  --mari-navy: #c97c4b; /* copper — headings, key numbers, top-accent borders */
-  --mari-green: #e4b73c; /* safety — secondary accent, "Total" emphasis, live indicators */
-  --mari-blue: #8facc6; /* muted — de-emphasized secondary accent */
-  --mari-gray-light: #26496e; /* mid-navy border, replacing the light-gray hairline */
-  --mari-gray-bg: #153e62; /* blue-panel — card/panel background (was page background) */
-  --status-good: #6fcf7a;
-  --status-warning: #e4b73c;
-  --status-critical: #e4685d;
+  /* TEMP PREVIEW — lighter variant of the blueprint theme, for side-by-side comparison against
+     the dark version (see git history for those values). Light "blueprint paper" surface instead
+     of deep navy, PLUS --mari-navy/--mari-green swapped from the template's copper/safety accents
+     to Mari's own logo colors — sampled directly from the actual logo PNG's pixel data (not
+     guessed): a bright blue (~#1e9de8, most common non-white/black pixel cluster after the green)
+     and a deep green (~#00783c, the single most common pixel color). KPI headings and key numbers
+     use --mari-navy directly, so this repoints them to the real logo blue; --mari-green (used for
+     "Total"/emphasis rows) repoints to the real logo green. */
+  --background: #e3eeec; /* light blueprint-paper tint with a touch of the logo's green mixed in */
+  --foreground: #1f3a56; /* dark navy body text, replacing paper (light-on-dark → dark-on-light) */
+  --mari-navy: #1e9de8; /* Mari logo blue — KPI headings, key numbers, top-accent borders */
+  --mari-green: #00783c; /* Mari logo green — "Total"/emphasis rows, live indicators */
+  --mari-blue: #4c6f92; /* darkened muted blue-gray for legible secondary text on light */
+  --mari-gray-light: #c9d8d4; /* light-medium border, tinted to match the greener background */
+  --mari-gray-bg: #ffffff; /* card/panel background — white, for contrast against the tinted page bg */
+  --status-good: #1a9850;
+  --status-warning: #b8860b;
+  --status-critical: #c0392b;
 }
 
 @theme inline {
@@ -70,9 +78,28 @@ body {
   animation: marquee-horizontal 45s linear infinite;
 }
 
+/* Hard on/off blink — Tailwind's animate-pulse is a slow, smooth opacity fade that reads as
+   too subtle at small sizes (e.g. the 1.5px scenario dots); this snaps fully off instead of
+   fading, which is more noticeable at a glance. */
+@keyframes blink {
+  0%,
+  59% {
+    opacity: 1;
+  }
+  60%,
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.animate-blink {
+  animation: blink 1.8s steps(1, end) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee-vertical,
-  .animate-marquee-horizontal {
+  .animate-marquee-horizontal,
+  .animate-blink {
     animation: none;
   }
 }

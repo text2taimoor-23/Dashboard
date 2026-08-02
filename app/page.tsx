@@ -17,9 +17,8 @@ import {
   IMF_PROGRAM,
   MARI_DIVIDEND,
   MARI_DRILLING_ACTIVITY,
+  MARI_FIELD_WELLHEAD_PRICES,
   MARI_FINDING_COST,
-  MARI_NON_OPERATED_GAS_FIELDS,
-  MARI_OPERATED_GAS_FIELDS,
   MARI_OPERATORSHIP,
   MARI_PRODUCTION_SHARE,
   MARI_RESERVES,
@@ -357,7 +356,7 @@ function ProductionShareKpiTile({
       <div className="mt-2 flex items-start justify-center gap-4">
         <ProductionShareStat
           percent={oilPercent}
-          color="#c97c4b"
+          color="#1e9de8"
           label="Oil"
           unit={data.oil.unit}
           topProducer={data.oil.topProducer}
@@ -366,7 +365,7 @@ function ProductionShareKpiTile({
         />
         <ProductionShareStat
           percent={gasPercent}
-          color="#4c6f92"
+          color="#00783c"
           label="Gas"
           unit={data.gas.unit}
           topProducer={data.gas.topProducer}
@@ -541,38 +540,17 @@ function OperatorshipKpiTile({ data }: { data: typeof MARI_OPERATORSHIP }) {
   );
 }
 
-// Per-field wellhead gas price table for Mari's operated + non-operated GAS fields only (see
-// MARI_OPERATED_GAS_FIELDS / MARI_NON_OPERATED_GAS_FIELDS for the oil-field exclusions and
-// sourcing). Two price columns per the user's explicit request — Jan-Jun 2026 and Jul-Dec 2026 —
-// but Mari Field is the ONLY row with real figures: OGRA's notification site
-// (ogra.org.pk/well-head-gas-prices) no longer resolves at all, so there is no source, live or
-// archival, to verify a Jan-Jun price for the other 12 gas fields against, nor to check whether
-// any of them has a Jul-Dec notification yet. Their cells intentionally show "—" (not a fabricated
-// number, and not a blinking Pending badge either — Pending would wrongly imply this dashboard is
-// actively monitoring a real notification queue for those fields, which it isn't). Mari Field's
-// Jul-Dec cell reuses the same `mari` state (nextPeriod.notified) already powering GasComboTile,
-// so its Pending/Notified badge always matches that tile.
-function GasFieldWellheadPricesKpiTile({
-  operatedGasFields,
-  nonOperatedGasFields,
-  mari,
-}: {
-  operatedGasFields: string[];
-  nonOperatedGasFields: string[];
-  mari: MariApiResponse | null;
-}) {
-  const lastVerified = mari?.lastVerified;
-  const nextPeriod = mari?.nextPeriod;
-  const rows = [
-    ...operatedGasFields.map((name) => ({ name, operated: true })),
-    ...nonOperatedGasFields.map((name) => ({ name, operated: false })),
-  ];
-
+// Per-field wellhead gas price table, restricted to exactly the 6 fields in MARI_FIELD_WELLHEAD_
+// PRICES, in that array's order (per an explicit 2026-08-03 request — don't add other fields back
+// or re-sort). Jul-Dec 2026 shows the real notified price (not just a "Notified" badge) once OGRA
+// publishes it and the PDF has been read; until then it blinks "Pending". See the comment on
+// MARI_FIELD_WELLHEAD_PRICES for the daily-check/Jan-2027 cadence.
+function GasFieldWellheadPricesKpiTile() {
   return (
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Gas Field Wellhead Prices
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; PKR/MMBTU</span>
+        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/MMBTU</span>
       </div>
       <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-foreground/40">
         <span>Field</span>
@@ -582,29 +560,22 @@ function GasFieldWellheadPricesKpiTile({
         </span>
       </div>
       <div className="mt-1 space-y-1 text-[11px]">
-        {rows.map((row) => {
-          const isMari = row.name === "Mari Field";
+        {MARI_FIELD_WELLHEAD_PRICES.map((field) => {
+          const isOperated = field.operator === "Mari Energies";
           return (
-            <div key={row.name} className="flex items-center justify-between gap-2">
-              <span className={isMari ? "font-semibold text-mari-navy" : "text-foreground/70"}>
-                {row.name}
-                {!row.operated && <span className="ml-1 text-[9px] text-foreground/30">(non-op.)</span>}
+            <div key={field.fieldName} className="flex items-center justify-between gap-2">
+              <span className={isOperated ? "font-semibold text-mari-navy" : "font-semibold text-mari-blue"}>
+                {field.fieldName}
               </span>
               <span className="flex flex-shrink-0 items-center gap-3">
-                <span className="w-14 text-right font-medium text-mari-navy">
-                  {isMari && typeof lastVerified?.benchmark?.value === "number"
-                    ? lastVerified.benchmark.value.toFixed(2)
-                    : "—"}
+                <span className={isOperated ? "w-14 text-right font-medium text-mari-navy" : "w-14 text-right font-medium text-mari-blue"}>
+                  ${field.janJun2026.value.toFixed(2)}
                 </span>
                 <span className="w-16 text-right">
-                  {isMari ? (
-                    nextPeriod?.notified ? (
-                      <span className="font-medium text-status-good">Notified</span>
-                    ) : (
-                      <span className="inline-block animate-pulse font-medium text-status-warning">Pending</span>
-                    )
+                  {field.julDec2026 ? (
+                    <span className="font-medium text-status-good">${field.julDec2026.value.toFixed(2)}</span>
                   ) : (
-                    <span className="text-foreground/30">—</span>
+                    <span className="inline-block animate-blink font-medium text-status-warning">Pending</span>
                   )}
                 </span>
               </span>
@@ -612,10 +583,16 @@ function GasFieldWellheadPricesKpiTile({
           );
         })}
       </div>
-      <div className="mt-2 text-[10px] leading-snug text-foreground/40">
-        Fields: MariEnergies Concession Map, gas-producing only. Only Mari Field has a
-        hand-verified wellhead price — OGRA&apos;s notification site no longer resolves, so the
-        other {rows.length - 1} fields show no figure rather than a guess.
+      <div className="mt-2 flex items-center gap-3 text-[10px] leading-snug text-foreground/40">
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-mari-navy" /> Operated
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-mari-blue" /> Non-operated
+        </span>
+      </div>
+      <div className="mt-1 text-[10px] leading-snug text-foreground/40">
+        OGRA wellhead notifications &middot; checked daily at 10 AM for Jul-Dec 2026 prices.
       </div>
     </div>
   );
@@ -827,7 +804,7 @@ function BdcUpdateBar({ updates }: { updates: { date: string; text: string }[] }
   return (
     <div className="mt-4 flex items-stretch overflow-hidden border-t-[3px] border-mari-navy bg-mari-gray-bg">
       <div className="flex-shrink-0 bg-mari-green px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-background">
-        BDC Update
+        BDC Notice Board
       </div>
       <div className="flex-1 overflow-hidden">
         <div
@@ -1101,7 +1078,10 @@ function OilPriceOutlook() {
         {OIL_PRICE_OUTLOOK.scenarios.map((s) => (
           <div key={s.case} className="rounded-sm border border-mari-gray-light border-t-2 bg-mari-gray-bg p-3" style={{ borderTopColor: s.color }}>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-foreground/70">{s.case}</span>
+              <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground/70">
+                <span className="h-1.5 w-1.5 animate-blink rounded-full" style={{ backgroundColor: s.color }} />
+                {s.case}
+              </span>
               <span className="text-[10px] text-foreground/40">{s.probability}</span>
             </div>
             <div className="mt-1 text-lg font-semibold text-mari-navy">{s.brentRange}</div>
@@ -1147,15 +1127,15 @@ function OilOutlookTrendTile() {
       </div>
       <div className="mt-1 flex items-center justify-center gap-2 text-[9px] text-foreground/60">
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-status-critical" />
+          <span className="h-1.5 w-1.5 animate-blink rounded-full bg-status-critical" />
           Bull $105-125
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-mari-blue" />
+          <span className="h-1.5 w-1.5 animate-blink rounded-full bg-mari-blue" />
           Base $90-105
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-status-good" />
+          <span className="h-1.5 w-1.5 animate-blink rounded-full bg-status-good" />
           Bear $70-85
         </span>
       </div>
@@ -1678,11 +1658,14 @@ export default function Home() {
         </div>
 
         {/* KPI strip, row 2 — Global Oil Benchmarks and Petrol & HSD (+ PKR/USD) were removed
-            from here once their data moved into the top LiveTicker, per explicit request; the
-            remaining tiles keep their prior relative order (Price Outlook, Receivables swapped
-            in from row 1's former PSX Announcements slot, then PPIS Sector News). */}
+            from here once their data moved into the top LiveTicker, per explicit request. Per a
+            2026-08-03 request, Gas Field Wellhead Prices (previously its own row 4) and
+            Operatorship (previously row 3) were moved into slots 2 and 3 here, pushing
+            Receivables and PPIS Sector News right into slots 4 and 5. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <OilOutlookTrendTile />
+          <GasFieldWellheadPricesKpiTile />
+          <OperatorshipKpiTile data={MARI_OPERATORSHIP} />
           <QuarterReceivablesTile {...RECEIVABLES_BY_QUARTER[RECEIVABLES_BY_QUARTER.length - 1]} />
           <NewsTickerTile
             heading="E&P Updates"
@@ -1695,26 +1678,13 @@ export default function Home() {
 
         {/* KPI strip, row 3 — the remaining tiles not named in the user's explicit ordering:
             Mari's annual-snapshot financial-depth figures and the laggier external/macro context,
-            all past/periodic rather than live. Operatorship added per a later request, sourced
-            from Mari's own Concession Map. LNG import volume still pending (see note above
-            OIL_IMPORTS_LAST_MONTH). */}
+            all past/periodic rather than live. Operatorship moved out to row 2 (see above) on
+            2026-08-03. LNG import volume still pending (see note above OIL_IMPORTS_LAST_MONTH). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <ReservesKpiTile data={MARI_RESERVES} />
-          <OperatorshipKpiTile data={MARI_OPERATORSHIP} />
           <FindingCostKpiTile data={MARI_FINDING_COST} />
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <ImfProgramTile />
-        </div>
-
-        {/* KPI strip, row 4 — field-level detail behind row 3's Operatorship summary, added per a
-            follow-up request and then narrowed to gas fields only with a Jan-Jun/Jul-Dec price
-            table per a further follow-up. Only 1 tile; partial row is fine. */}
-        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
-          <GasFieldWellheadPricesKpiTile
-            operatedGasFields={MARI_OPERATED_GAS_FIELDS}
-            nonOperatedGasFields={MARI_NON_OPERATED_GAS_FIELDS}
-            mari={mari}
-          />
         </div>
 
         {showDetails && (
@@ -1876,14 +1846,14 @@ export default function Home() {
                 mariValue={MARI_PRODUCTION_SHARE.oil.mariBbl}
                 totalValue={MARI_PRODUCTION_SHARE.oil.totalBbl}
                 unit={MARI_PRODUCTION_SHARE.oil.unit}
-                color="#c97c4b"
+                color="#1e9de8"
               />
               <ProductionShareDonut
                 label="Gas"
                 mariValue={MARI_PRODUCTION_SHARE.gas.mariMmcft}
                 totalValue={MARI_PRODUCTION_SHARE.gas.totalMmcft}
                 unit={MARI_PRODUCTION_SHARE.gas.unit}
-                color="#8facc6"
+                color="#00783c"
               />
             </div>
             <p className="mt-3 text-xs text-foreground/50">

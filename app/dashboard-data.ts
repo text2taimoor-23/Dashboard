@@ -177,7 +177,7 @@ export type BdcUpdate = { date: string; text: string };
 export const BDC_TEAM_UPDATES: BdcUpdate[] = [
   { date: "Aug 03, 2026", text: "BDC Townhall Meeting — Monday, 11:30 AM, Conference Room" },
   { date: "Aug 05, 2026", text: "OCM-TCM of Karak Block — 10:00 AM, Conference Room" },
-  { date: "Aug 05, 2026", text: "Green Initiative — Weekly Meeting Planative, 2:30 PM, HSE Meeting Room" },
+  { date: "Aug 05, 2026", text: "Green Energy — Weekly Meeting Planative, 2:30 PM, HSE Meeting Room" },
   { date: "Aug 06, 2026", text: "Supplemental Agreement with Engro — deadline Friday" },
   { date: "—", text: "Welcome/orientation to newly hired Management Trainees" },
 ];
@@ -220,9 +220,9 @@ export const RECEIVABLES_BY_QUARTER = [
 // Pakistan petroleum import volumes, read directly from OCAC's own Import/Export report. Not
 // scraped — updated by hand whenever a newer month's row is published and read.
 export const OIL_IMPORTS_LAST_MONTH = {
-  periodLabel: "May 2026",
-  totalKt: 1198.1,
-  crudeKt: 774.6,
+  periodLabel: "Jun 2026",
+  totalKt: 1464.6,
+  crudeKt: 1032.9,
   source: "OCAC",
 };
 
@@ -311,14 +311,7 @@ export const MARI_OPERATORSHIP = {
 // own "Hydrocarbon Type" on marienergies.com.pk/what-we-do/field-details (Operated and Non
 // Operated tabs) to filter out the two pure-oil operated fields: Bolan East ("Oil") and Ghauri
 // ("Oil"). All 7 non-operated fields are gas or gas-and-condensate, so none were excluded there.
-// Halini is "Oil and Gas" (kept, since it does produce gas). Deliberately does NOT carry a
-// per-field wellhead price for anything except Mari Field itself: OGRA's site
-// (ogra.org.pk/well-head-gas-prices) no longer resolves at all as of 2026-08-02 — it now
-// redirects to a near-empty parked-looking homepage — so there is no live or archival source to
-// verify a price for the other 12 gas fields against. Only Mari Field's price is shown
-// on-dashboard, sourced the same way as everywhere else on this dashboard: hand-read from the
-// actual OGRA gazette PDF (see LAST_VERIFIED_MARI_PRICE in app/api/mari-gas-price/route.ts), not
-// scraped from the broken site. Do not add fabricated prices for the other fields here.
+// Halini is "Oil and Gas" (kept, since it does produce gas).
 export const MARI_OPERATED_GAS_FIELDS = [
   "Sujawal",
   "Kalabagh (Karak)",
@@ -336,6 +329,78 @@ export const MARI_NON_OPERATED_GAS_FIELDS = [
   "Adam X-1 (Hala)",
   "Togh and Togh Bala",
   "Adam West (Hala)",
+];
+
+// Per-field OGRA wellhead price notifications, verified 2026-08-02/03 by reading the actual
+// gazette PDFs (each has a real text layer, unlike Mari Field's older scanned notices) —
+// cross-checked against Mari's own concession-map field names rather than guessed.
+// ogra.org.pk/well-head-gas-prices redirects to a stripped placeholder page for ordinary browser
+// navigation, but a plain server-side fetch (curl / this app's own route) still returns the full
+// notification listing, so the scraper genuinely works; see the note on OGRA_WELLHEAD_PAGE in
+// app/api/mari-gas-price/route.ts. Deliberately just these 6 (per explicit 2026-08-03 request) —
+// display order matters here and is NOT alphabetical, it's the order requested: Sujjal, Kalabagh
+// (Karak), Zarghun South, Fazl X-1, Adam X-1, Togh and Togh Bala. `GasFieldWellheadPricesKpiTile`
+// renders this array directly, in this order — don't re-sort it. Mari Field (PKR-denominated, a
+// different mechanism, tracked separately via LAST_VERIFIED_MARI_PRICE) and the other 6 gas
+// fields with no verifiable OGRA notification (Sujawal, Halini, Ratana, Benari, Bashar X-1, Adam
+// West) were deliberately dropped from this KPI rather than shown as dashes.
+//
+// julDec2026 is null until OGRA actually publishes a Jul-Dec 2026 notification for that field —
+// checked daily at 10 AM (see the scheduled task described in CLAUDE.md) against OGRA's live
+// listing. When a field's notification appears, read the matching gazette PDF (same process as
+// these 6 originals) and fill in julDec2026 by hand — don't guess a number from the pattern of
+// Jan-Jun prices. Once ALL SIX fields have a julDec2026 value filled in, this whole list is fully
+// notified for 2026 and the daily check should stop until Jan 2027, when OGRA is next expected to
+// publish Jan-Jun 2027 notifications for these same fields.
+export const MARI_FIELD_WELLHEAD_PRICES = [
+  {
+    fieldName: "Sujjal",
+    janJun2026: { value: 5.3725, currency: "USD" as const, unit: "MMBTU" },
+    julDec2026: null as { value: number; currency: "USD"; unit: string } | null,
+    operator: "Mari Energies",
+    buyer: "SSGCL",
+    reference: "OGRA-Fin-28-9(84)/2015 dated Mar 25, 2026",
+  },
+  {
+    fieldName: "Kalabagh (Karak)",
+    janJun2026: { value: 5.9094, currency: "USD" as const, unit: "MMBTU" },
+    julDec2026: null as { value: number; currency: "USD"; unit: string } | null,
+    operator: "Mari Energies",
+    buyer: "SNGPL",
+    reference: "OGRA-Fin-28-9(153)/2017 dated Mar 30, 2026",
+  },
+  {
+    fieldName: "Zarghun South",
+    janJun2026: { value: 6.3547, currency: "USD" as const, unit: "MMBTU" },
+    julDec2026: null as { value: number; currency: "USD"; unit: string } | null,
+    operator: "Mari Energies",
+    buyer: "SSGCL",
+    reference: "OGRA-Fin-28-9(77)/2005 dated Mar 30, 2026",
+  },
+  {
+    fieldName: "Fazl X-1 (Hala)",
+    janJun2026: { value: 5.3724, currency: "USD" as const, unit: "MMBTU" },
+    julDec2026: null as { value: number; currency: "USD"; unit: string } | null,
+    operator: "Pakistan Petroleum Limited",
+    buyer: "SSGCL",
+    reference: "OGRA-10-9(230)/2020 dated Mar 30, 2026",
+  },
+  {
+    fieldName: "Adam X-1 (Hala)",
+    janJun2026: { value: 2.7259, currency: "USD" as const, unit: "MMBTU" },
+    julDec2026: null as { value: number; currency: "USD"; unit: string } | null,
+    operator: "Pakistan Petroleum Limited",
+    buyer: "SSGCL",
+    reference: "OGRA-Fin-28-9(55)/2010 dated Mar 30, 2026",
+  },
+  {
+    fieldName: "Togh and Togh Bala",
+    janJun2026: { value: 5.9094, currency: "USD" as const, unit: "MMBTU" },
+    julDec2026: null as { value: number; currency: "USD"; unit: string } | null,
+    operator: "OGDCL",
+    buyer: "SNGPL",
+    reference: "OGRA-Fin-28-9(247)/2020 dated Mar 17, 2026",
+  },
 ];
 
 // NOT a Claude/Mari prediction — a synthesis of publicly published third-party forecasts plus

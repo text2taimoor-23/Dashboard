@@ -16,11 +16,14 @@ export async function GET() {
     const html = await res.text();
 
     // straits.live embeds a plain-text share/SEO summary that's more stable than its CSS
-    // classes, e.g. `Strait of Hormuz: Closed. Day 146 since closure. Brent $98.06 (-2.5%).
+    // classes, e.g. `Strait of Hormuz: Closed. Day 155 since closure. Brent $87.93.
     // War-risk 8.0x normal.` — it's serialized inside a JS string literal with escaped quotes
     // (\"text\":\"...\"), so match on the sentence itself rather than the surrounding JSON keys.
+    // The site dropped the "(±X%)" change figure that used to follow the Brent price at some
+    // point (confirmed 2026-08-02 — it broke this route's match entirely since the group was
+    // required), so that part is now optional and brentChangePercent may come back null.
     const summaryMatch = html.match(
-      /Strait of Hormuz:\s*(Open|Closed)\.\s*Day (\d+) since closure\.\s*Brent \$([\d.]+)\s*\(([-+]?[\d.]+)%\)\.\s*War-risk ([\d.]+)/i
+      /Strait of Hormuz:\s*(Open|Closed)\.\s*Day (\d+) since closure\.\s*Brent \$([\d.]+)(?:\s*\(([-+]?[\d.]+)%\))?\.\s*War-risk ([\d.]+)/i
     );
     if (!summaryMatch) {
       throw new Error("Could not find the Strait of Hormuz status summary — the site layout may have changed.");
@@ -33,7 +36,7 @@ export async function GET() {
       status: statusText.toLowerCase(),
       dayCount: parseInt(dayText, 10),
       brentPrice: parseFloat(brentText),
-      brentChangePercent: parseFloat(brentChangeText),
+      brentChangePercent: brentChangeText ? parseFloat(brentChangeText) : null,
       warRiskMultiplier: parseFloat(warRiskText),
       asOf: timestampMatch ? timestampMatch[1] : null,
       fetchedAt: new Date().toISOString(),
