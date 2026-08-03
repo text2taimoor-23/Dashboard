@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import {
   BDC_TEAM_UPDATES,
+  CompetitorIntelResponse,
   IMF_PROGRAM,
   MARI_DIVIDEND,
   MARI_DRILLING_ACTIVITY,
@@ -177,6 +178,9 @@ const PSX_ANNOUNCEMENTS_POLL_INTERVAL_MS = 60 * 60_000;
 const HORMUZ_POLL_INTERVAL_MS = 60 * 60_000;
 // Same rationale as PSX above — hourly polling naturally covers the requested 9am daily refresh.
 const PPIS_NEWS_POLL_INTERVAL_MS = 60 * 60_000;
+// Competitor PSX disclosures don't have a live feed either — hourly polling is plenty for
+// company announcements, which land at most a few times a week.
+const COMPETITOR_INTEL_POLL_INTERVAL_MS = 60 * 60_000;
 // The exchange rate API itself only refreshes ~once/24h; this just needs to be no slower than that.
 const PKR_USD_POLL_INTERVAL_MS = 6 * 60 * 60_000;
 const MARI_LOGO_URL =
@@ -1363,6 +1367,8 @@ export default function Home() {
   const [pkrUsdError, setPkrUsdError] = useState<string | null>(null);
   const [psxPeerPrices, setPsxPeerPrices] = useState<PsxPeerPricesResponse | null>(null);
   const [psxPeerPricesError, setPsxPeerPricesError] = useState<string | null>(null);
+  const [competitorIntel, setCompetitorIntel] = useState<CompetitorIntelResponse | null>(null);
+  const [competitorIntelError, setCompetitorIntelError] = useState<string | null>(null);
   const [today, setToday] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -1616,6 +1622,36 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
 
+    async function fetchCompetitorIntel() {
+      try {
+        const res = await fetch("/api/competitor-intel", { cache: "no-store" });
+        const data: CompetitorIntelResponse = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || (!data.announcements && data.error)) {
+          setCompetitorIntelError(data.error ?? "Failed to fetch competitor intelligence");
+          return;
+        }
+
+        setCompetitorIntelError(data.error ?? null);
+        setCompetitorIntel(data);
+      } catch {
+        if (!cancelled) setCompetitorIntelError("Network error while fetching competitor intelligence");
+      }
+    }
+
+    fetchCompetitorIntel();
+    const interval = setInterval(fetchCompetitorIntel, COMPETITOR_INTEL_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
     async function fetchPkrUsd() {
       try {
         const res = await fetch("/api/pkr-usd-rate", { cache: "no-store" });
@@ -1797,12 +1833,22 @@ export default function Home() {
             used by the "Show full report" detail panel below), just no longer rendered as a KPI
             tile. Re-add <ImfProgramTile /> here if a future request wants it back — this exact
             tile has been added/removed/re-added before (see git history), so don't assume it's
-            safe to delete outright. */}
+            safe to delete outright. Competitor Intelligence added 2026-08-04 to complete the row,
+            in the same NewsTickerTile format as row 2's E&P Updates tile, per an explicit request
+            — see /api/competitor-intel for sourcing (each competitor's own PSX disclosures, not a
+            third-party aggregator). */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <ReservesKpiTile data={MARI_RESERVES} />
           <FindingCostKpiTile data={MARI_FINDING_COST} />
-          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
           <EnergyMixKpiTile data={PAKISTAN_ENERGY_MIX} />
+          <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
+          <NewsTickerTile
+            heading="Competitor Intelligence"
+            subheading="PSX Peer Disclosures"
+            items={competitorIntel?.announcements}
+            error={competitorIntelError}
+            sourceNote="Source: PSX Data Portal · OGDCL, PPL, Pakistan Oilfields · refreshed hourly"
+          />
         </div>
 
         {showDetails && (

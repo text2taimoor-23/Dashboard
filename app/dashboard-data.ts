@@ -109,6 +109,18 @@ export type PsxAnnouncementsResponse = {
   error?: string;
 };
 
+// Live market intelligence on Mari's listed E&P peers — each competitor's own PSX disclosures
+// (financial results, board meetings, discoveries), not a third-party news aggregator. `category`
+// on each TickerItem is the competitor's name, not the disclosure type, so the ticker reads as
+// "which competitor did what". A partial-failure `error` can be present alongside real
+// `announcements` if one competitor's PSX page failed to scrape but others succeeded.
+export type CompetitorIntelResponse = {
+  announcements?: TickerItem[];
+  fetchedAt?: string;
+  source?: string;
+  error?: string | null;
+};
+
 export type HormuzStatusResponse = {
   status?: "open" | "closed";
   dayCount?: number | null;
