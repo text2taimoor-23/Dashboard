@@ -22,8 +22,11 @@ import {
   MARI_OPERATORSHIP,
   MARI_PRODUCTION_SHARE,
   MARI_RESERVES,
+  EnergyMixSegment,
+  EnergyMixState,
   OIL_IMPORTS_LAST_MONTH,
   OIL_PRICE_OUTLOOK,
+  PAKISTAN_ENERGY_MIX,
   PsxPeerPricesResponse,
   PSX_PEER_PRICES_POLL_INTERVAL_MS,
   RECEIVABLES_BY_QUARTER,
@@ -198,17 +201,23 @@ function OilImportsTile({
   totalKt,
   crudeKt,
   source,
+  billUsdBn,
+  billYoyChangePercent,
+  billSource,
 }: {
   periodLabel: string;
   totalKt: number;
   crudeKt: number;
   source: string;
+  billUsdBn?: number;
+  billYoyChangePercent?: number;
+  billSource?: string;
 }) {
   return (
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Pakistan Oil Imports
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {periodLabel}</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; {periodLabel}</span>
       </div>
       <div className="mt-2 flex items-end gap-4">
         <div>
@@ -229,8 +238,22 @@ function OilImportsTile({
           <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/50">Crude Oil</div>
         </div>
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
-        Source: {source} &middot; latest month with published data (~1 month lag)
+      {typeof billUsdBn === "number" && (
+        <div className="mt-2 flex items-center justify-between border-t border-mari-gray-light/60 pt-2 text-sm">
+          <span className="font-semibold text-foreground/70">Import Bill</span>
+          <span className="font-semibold text-mari-navy">
+            USD {billUsdBn.toFixed(2)}bn
+            {typeof billYoyChangePercent === "number" && (
+              <span className={`ml-1 text-xs font-normal ${billYoyChangePercent >= 0 ? "text-status-critical" : "text-status-good"}`}>
+                ({billYoyChangePercent >= 0 ? "+" : ""}
+                {billYoyChangePercent.toFixed(1)}% YoY)
+              </span>
+            )}
+          </span>
+        </div>
+      )}
+      <div className="mt-2 text-[10px] text-foreground/60">
+        Volume: {source}{billSource ? ` · Bill: ${billSource}` : ""} &middot; latest month with published data (~1 month lag)
       </div>
     </div>
   );
@@ -258,7 +281,7 @@ function DonutRing({ percent, color, size }: { percent: number; color: string; s
             isAnimationActive={false}
           >
             <Cell fill={color} />
-            <Cell fill="#26496e" />
+            <Cell fill="#c9d8d4" />
           </Pie>
         </PieChart>
       </ResponsiveContainer>
@@ -266,6 +289,95 @@ function DonutRing({ percent, color, size }: { percent: number; color: string; s
         <span className={size >= 120 ? "text-2xl font-semibold" : "text-xs font-semibold"}>
           {percent.toFixed(percent < 10 ? 2 : 1)}%
         </span>
+      </div>
+    </div>
+  );
+}
+
+const ENERGY_MIX_COLORS: Record<string, string> = {
+  Thermal: "#4c6f92",
+  Renewable: "#00783c",
+  Hydel: "#1e9de8",
+  Nuclear: "#c97c4b",
+};
+
+function MultiSegmentDonut({ segments, size }: { segments: EnergyMixSegment[]; size: number }) {
+  return (
+    <div className="relative" style={{ height: size, width: size }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={segments}
+            dataKey="percent"
+            nameKey="name"
+            innerRadius="65%"
+            outerRadius="100%"
+            startAngle={90}
+            endAngle={-270}
+            stroke="none"
+            isAnimationActive={false}
+          >
+            {segments.map((s) => (
+              <Cell key={s.name} fill={ENERGY_MIX_COLORS[s.name] ?? "#c9d8d4"} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// Fully data-driven — every number, label, and segment comes from PAKISTAN_ENERGY_MIX (see that
+// constant's comment for why this isn't backed by a live API). Re-keys the chart on the data's
+// own asOfDate so a future weekly update (which replaces `current`/`previous` in that constant)
+// remounts the donuts with a CSS fade instead of an abrupt redraw, and shows a change arrow next
+// to any segment whose percent moved since the last check.
+function EnergyMixKpiTile({ data }: { data: EnergyMixState }) {
+  const { current, previous } = data;
+  const daysSinceChecked = Math.floor((Date.now() - Date.parse(data.lastCheckedAt)) / 86_400_000);
+  const isStale = Date.now() > Date.parse(data.nextCheckDueAt) + 3 * 86_400_000;
+  const prevByName = new Map((previous?.generation ?? []).map((s) => [s.name, s]));
+
+  return (
+    <div className={KPI_CARD_CLASS}>
+      <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
+        Pakistan Energy Mix
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; {current.periodLabel}</span>
+      </div>
+      <div key={data.asOfDate} className="mt-2 flex items-center justify-center gap-5 transition-opacity duration-500">
+        <div className="flex flex-col items-center">
+          <MultiSegmentDonut segments={current.capacity} size={72} />
+          <span className="mt-1 text-[9px] font-medium uppercase tracking-wider text-foreground/50">Capacity</span>
+          <span className="text-[9px] text-foreground/50">{(current.totalCapacityMw / 1000).toFixed(1)} GW</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <MultiSegmentDonut segments={current.generation} size={72} />
+          <span className="mt-1 text-[9px] font-medium uppercase tracking-wider text-foreground/50">Generation</span>
+          <span className="text-[9px] text-foreground/50">{(current.totalGenerationGwh / 1000).toFixed(1)} TWh</span>
+        </div>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] text-foreground/70">
+        {current.generation.map((s) => {
+          const prev = prevByName.get(s.name);
+          const delta = prev ? s.percent - prev.percent : 0;
+          return (
+            <span key={s.name} className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: ENERGY_MIX_COLORS[s.name] }} />
+              {s.name}
+              {prev && Math.abs(delta) >= 0.1 && (
+                <span className={delta > 0 ? "text-status-critical" : "text-status-good"}>{delta > 0 ? "▲" : "▼"}</span>
+              )}
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-2 text-[10px] leading-snug text-foreground/60">
+        Source: {data.sourceLabel}
+        {isStale && (
+          <span className="ml-1 inline-block animate-blink font-medium text-status-warning">
+            · check overdue (last checked {daysSinceChecked}d ago)
+          </span>
+        )}
       </div>
     </div>
   );
@@ -351,7 +463,7 @@ function ProductionShareKpiTile({
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Mari Production Share
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; wk of {data.periodLabel}</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; wk of {data.periodLabel}</span>
       </div>
       <div className="mt-2 flex items-start justify-center gap-4">
         <ProductionShareStat
@@ -373,7 +485,7 @@ function ProductionShareKpiTile({
           mariValue={data.gas.mariMmcft}
         />
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
+      <div className="mt-2 text-[10px] text-foreground/60">
         Source: PPIS Upstream Activities &middot; login-gated, updated by hand
       </div>
     </div>
@@ -395,7 +507,7 @@ function ReservesKpiTile({ data }: { data: typeof MARI_RESERVES }) {
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Reserves &amp; Resources
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; 2P, MMBOE</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; 2P, MMBOE</span>
       </div>
       <div className="mt-2 flex items-end gap-1">
         <span className="text-2xl font-semibold text-mari-navy">{data.reserves2pMmboe.current.toFixed(1)}</span>
@@ -419,7 +531,7 @@ function ReservesKpiTile({ data }: { data: typeof MARI_RESERVES }) {
           <span className="font-medium text-mari-navy">{data.totalReservesAndResourcesMmboe.current} MMBOE</span>
         </div>
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
+      <div className="mt-2 text-[10px] text-foreground/60">
         Source: {data.source} &middot; as of {data.asOfDate}, updated annually
       </div>
     </div>
@@ -434,7 +546,7 @@ function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Finding &amp; Development Cost
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {data.fiscalYearLabel}</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; {data.fiscalYearLabel}</span>
       </div>
       <div className="mt-2 flex items-end gap-1">
         <span className="text-2xl font-semibold text-mari-navy">{data.fdCostUsdPerBoe.current.toFixed(2)}</span>
@@ -455,7 +567,7 @@ function FindingCostKpiTile({ data }: { data: typeof MARI_FINDING_COST }) {
         average). Still capex-only — not an all-in operating cost per BOE, which would also need
         production/lifting opex (not broken out at a per-BOE level in Mari&apos;s own disclosures).
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">Source: {data.source} &middot; updated annually</div>
+      <div className="mt-2 text-[10px] text-foreground/60">Source: {data.source} &middot; updated annually</div>
     </div>
   );
 }
@@ -469,7 +581,7 @@ function DrillingActivityKpiTile({ data }: { data: typeof MARI_DRILLING_ACTIVITY
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Drilling Activity
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; active wells</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; active wells</span>
       </div>
       <div className="mt-2 flex items-end gap-1">
         <span className="text-2xl font-semibold text-mari-navy">{data.mariWells.total}</span>
@@ -493,7 +605,7 @@ function DrillingActivityKpiTile({ data }: { data: typeof MARI_DRILLING_ACTIVITY
           </span>
         </div>
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
+      <div className="mt-2 text-[10px] text-foreground/60">
         Source: {data.source} &middot; as of {data.asOfDate}, updated by hand
       </div>
     </div>
@@ -509,14 +621,14 @@ function OperatorshipKpiTile({ data }: { data: typeof MARI_OPERATORSHIP }) {
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Operatorship
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; blocks &amp; leases</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; blocks &amp; leases</span>
       </div>
       <div className="mt-2 flex items-center gap-3">
         <DonutRing percent={operatedPercent} color="#c97c4b" size={64} />
         <div className="text-xs leading-tight">
           <div className="font-semibold text-mari-navy">{data.operated.total} Operated</div>
           <div className="text-foreground/60">{data.nonOperated.total} Non-Operated</div>
-          <div className="mt-0.5 text-foreground/40">of {data.totalAssets} total assets</div>
+          <div className="mt-0.5 text-foreground/60">of {data.totalAssets} total assets</div>
         </div>
       </div>
       <div className="mt-2 space-y-1 text-xs">
@@ -533,7 +645,7 @@ function OperatorshipKpiTile({ data }: { data: typeof MARI_OPERATORSHIP }) {
           </span>
         </div>
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
+      <div className="mt-2 text-[10px] text-foreground/60">
         Source: {data.source} &middot; as of {data.asOfDate}, updated by hand
       </div>
     </div>
@@ -550,9 +662,9 @@ function GasFieldWellheadPricesKpiTile() {
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Gas Field Wellhead Prices
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; USD/MMBTU</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; USD/MMBTU</span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-foreground/40">
+      <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-foreground/60">
         <span>Field</span>
         <span className="flex gap-3">
           <span className="w-14 text-right">Jan-Jun</span>
@@ -583,7 +695,7 @@ function GasFieldWellheadPricesKpiTile() {
           );
         })}
       </div>
-      <div className="mt-2 flex items-center gap-3 text-[10px] leading-snug text-foreground/40">
+      <div className="mt-2 flex items-center gap-3 text-[10px] leading-snug text-foreground/60">
         <span className="flex items-center gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-mari-navy" /> Operated
         </span>
@@ -591,7 +703,7 @@ function GasFieldWellheadPricesKpiTile() {
           <span className="h-1.5 w-1.5 rounded-full bg-mari-blue" /> Non-operated
         </span>
       </div>
-      <div className="mt-1 text-[10px] leading-snug text-foreground/40">
+      <div className="mt-1 text-[10px] leading-snug text-foreground/60">
         OGRA wellhead notifications &middot; checked daily at 10 AM for Jul-Dec 2026 prices.
       </div>
     </div>
@@ -607,7 +719,7 @@ function ImfProgramTile() {
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Pakistan IMF Program
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; EFF + RSF</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; EFF + RSF</span>
       </div>
       <div className="mt-2 space-y-1.5 text-sm">
         <div className="flex items-center justify-between">
@@ -618,21 +730,21 @@ function ImfProgramTile() {
           <span className="text-foreground/60">Latest Tranche</span>
           <span className="text-right">
             <span className="font-medium text-mari-navy">USD {latestTranche.toFixed(2)}bn</span>
-            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.latestReviewDate}</div>
+            <div className="text-[10px] text-foreground/60">{IMF_PROGRAM.latestReviewDate}</div>
           </span>
         </div>
         <div className="flex items-baseline justify-between">
           <span className="text-foreground/60">Next Tranche</span>
           <span className="text-right">
             <span className="font-medium text-mari-navy">&#8776;USD {nextTranche.toFixed(2)}bn</span>
-            <div className="text-[10px] text-foreground/40">test {IMF_PROGRAM.nextReviewTestDate}</div>
+            <div className="text-[10px] text-foreground/60">test {IMF_PROGRAM.nextReviewTestDate}</div>
           </span>
         </div>
         <div className="flex items-baseline justify-between">
           <span className="text-foreground/60">Circular Debt</span>
           <span className="text-right">
             <span className="font-medium text-status-critical">Rs {IMF_PROGRAM.circularDebtRsTn.toFixed(2)}tn</span>
-            <div className="text-[10px] text-foreground/40">{IMF_PROGRAM.circularDebtAsOf}</div>
+            <div className="text-[10px] text-foreground/60">{IMF_PROGRAM.circularDebtAsOf}</div>
           </span>
         </div>
       </div>
@@ -643,7 +755,7 @@ function ImfProgramTile() {
           <span className="ml-1 text-xs font-normal text-foreground/50">({disbursedPercent.toFixed(0)}%)</span>
         </span>
       </div>
-      <div className="mt-2 text-[10px] text-foreground/40">
+      <div className="mt-2 text-[10px] text-foreground/60">
         Source: IMF Staff Report &middot; updated per review, not a live feed
       </div>
     </div>
@@ -667,7 +779,7 @@ function NewsTickerTile({
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         {heading}
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; {subheading}</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; {subheading}</span>
       </div>
       {error && !items && <div className="mt-2 text-xs text-status-critical">{error}</div>}
       {items && items.length > 0 && (
@@ -700,7 +812,7 @@ function NewsTickerTile({
           </div>
         </div>
       )}
-      <div className="mt-2 text-[10px] text-foreground/40">{sourceNote}</div>
+      <div className="mt-2 text-[10px] text-foreground/60">{sourceNote}</div>
     </div>
   );
 }
@@ -763,7 +875,7 @@ function LiveTicker({
 
   if (chips.length === 0) {
     return (
-      <div className="rounded-md border border-mari-gray-light bg-mari-gray-bg px-3 py-2 text-xs text-foreground/40">
+      <div className="rounded-md border border-mari-gray-light bg-mari-gray-bg px-3 py-2 text-xs text-foreground/60">
         Loading live prices…
       </div>
     );
@@ -948,7 +1060,7 @@ function GasComboTile({
 
       {/* Box 1 — upcoming half-year period, checked against OGRA's live listing until notified */}
       <div className="mt-2 rounded-sm bg-mari-gray-light/20 px-2 py-1.5">
-        <div className="text-[9px] font-medium uppercase tracking-wider text-foreground/40">Upcoming Period</div>
+        <div className="text-[9px] font-medium uppercase tracking-wider text-foreground/60">Upcoming Period</div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">
             {nextPeriodShort ?? "Next Period"}
@@ -969,7 +1081,7 @@ function GasComboTile({
 
       {/* Box 2 — last verified (currently notified) half-year period */}
       <div className="mt-2">
-        <div className="text-[9px] font-medium uppercase tracking-wider text-foreground/40">
+        <div className="text-[9px] font-medium uppercase tracking-wider text-foreground/60">
           Notified Period{periodShort && ` (${periodShort})`}
         </div>
         <div className="mt-0.5 flex items-end gap-4">
@@ -1017,7 +1129,7 @@ function QuarterReceivablesTile({
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         MariEnergies Receivables
-        <span className="ml-1 font-normal normal-case text-foreground/40">
+        <span className="ml-1 font-normal normal-case text-foreground/60">
           &middot; {quarter} &middot; {period} &middot; PKR mn
         </span>
       </div>
@@ -1043,7 +1155,7 @@ function QuarterReceivablesTile({
         <span className="font-semibold text-foreground/70">Total</span>
         <span className="font-semibold text-mari-green">
           {fmtMn(total)}
-          <span className="ml-1 text-[10px] font-normal text-foreground/40">PKR mn</span>
+          <span className="ml-1 text-[10px] font-normal text-foreground/60">PKR mn</span>
         </span>
       </div>
     </div>
@@ -1082,12 +1194,12 @@ function OilPriceOutlook() {
                 <span className="h-1.5 w-1.5 animate-blink rounded-full" style={{ backgroundColor: s.color }} />
                 {s.case}
               </span>
-              <span className="text-[10px] text-foreground/40">{s.probability}</span>
+              <span className="text-[10px] text-foreground/60">{s.probability}</span>
             </div>
             <div className="mt-1 text-lg font-semibold text-mari-navy">{s.brentRange}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/40">Brent</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-foreground/60">Brent</div>
             <p className="mt-2 text-xs leading-snug text-foreground/70">{s.narrative}</p>
-            <p className="mt-2 text-[10px] leading-snug text-foreground/40">{s.sources}</p>
+            <p className="mt-2 text-[10px] leading-snug text-foreground/60">{s.sources}</p>
           </div>
         ))}
       </div>
@@ -1100,7 +1212,7 @@ function OilOutlookTrendTile() {
     <div className={KPI_CARD_CLASS}>
       <div className="min-h-8 text-left text-xs font-extrabold uppercase tracking-wider text-mari-navy">
         Oil Price Outlook
-        <span className="ml-1 font-normal normal-case text-foreground/40">&middot; Brent scenario</span>
+        <span className="ml-1 font-normal normal-case text-foreground/60">&middot; Brent scenario</span>
       </div>
       <div className="mt-1 h-20 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -1139,7 +1251,7 @@ function OilOutlookTrendTile() {
           Bear $70-85
         </span>
       </div>
-      <div className="mt-1 text-[10px] text-foreground/40">
+      <div className="mt-1 text-[10px] text-foreground/60">
         Scenario range, not a prediction &middot; {OIL_PRICE_OUTLOOK.horizonLabel}
       </div>
     </div>
@@ -1627,10 +1739,10 @@ export default function Home() {
                   )}
                   <div className="mt-1 space-y-0.5 border-t border-mari-gray-light/60 pt-1">
                     <div>Div. Yield: {((MARI_DIVIDEND.dividendPerShareRs / mariShare.price) * 100).toFixed(2)}%</div>
-                    <div className="text-foreground/40">
+                    <div className="text-foreground/60">
                       DPS: Rs {MARI_DIVIDEND.dividendPerShareRs.toFixed(2)}
                     </div>
-                    <div className="text-foreground/40">
+                    <div className="text-foreground/60">
                       Total: Rs {MARI_DIVIDEND.totalDividendRsBn}bn ({MARI_DIVIDEND.fiscalYearLabel})
                     </div>
                   </div>
@@ -1679,12 +1791,18 @@ export default function Home() {
         {/* KPI strip, row 3 — the remaining tiles not named in the user's explicit ordering:
             Mari's annual-snapshot financial-depth figures and the laggier external/macro context,
             all past/periodic rather than live. Operatorship moved out to row 2 (see above) on
-            2026-08-03. LNG import volume still pending (see note above OIL_IMPORTS_LAST_MONTH). */}
+            2026-08-03. LNG import volume still pending (see note above OIL_IMPORTS_LAST_MONTH).
+            Pakistan Energy Mix replaced the ImfProgramTile KPI here on 2026-08-03, per an explicit
+            request — ImfProgramTile's function definition and IMF_PROGRAM data are kept (still
+            used by the "Show full report" detail panel below), just no longer rendered as a KPI
+            tile. Re-add <ImfProgramTile /> here if a future request wants it back — this exact
+            tile has been added/removed/re-added before (see git history), so don't assume it's
+            safe to delete outright. */}
         <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-5">
           <ReservesKpiTile data={MARI_RESERVES} />
           <FindingCostKpiTile data={MARI_FINDING_COST} />
           <OilImportsTile {...OIL_IMPORTS_LAST_MONTH} />
-          <ImfProgramTile />
+          <EnergyMixKpiTile data={PAKISTAN_ENERGY_MIX} />
         </div>
 
         {showDetails && (

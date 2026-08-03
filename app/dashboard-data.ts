@@ -165,6 +165,83 @@ export const PPIS_NEWS_POLL_INTERVAL_MS = 60 * 60_000;
 export const PKR_USD_POLL_INTERVAL_MS = 6 * 60 * 60_000;
 export const PSX_PEER_PRICES_POLL_INTERVAL_MS = 5 * 60_000;
 
+// --- Pakistan Energy Mix: schema + state -----------------------------------------------------
+//
+// Researched 2026-08-03 whether this could run off a live API (SBP EasyData, a NEPRA API, or
+// PECI's CSV export), per an explicit request. Findings, so a future session doesn't re-attempt
+// the same dead ends:
+//   - SBP EasyData (easydata.sbp.org.pk) is real and has a genuine API, but its ~24,000 series are
+//     External/Monetary/Financial/Real-sector macro data (CPI, reserves, interest rates, exchange
+//     rates) — it has NO generation-mix-by-fuel-type data at all. Wrong domain for this KPI.
+//   - NEPRA (nepra.org.pk) has no public API, JSON, or CSV endpoint anywhere on their site
+//     (confirmed by fetching the raw HTML and grepping for api/json/csv/opendata — zero hits).
+//     They publish only an annual "State of Industry Report" PDF.
+//   - PECI (peci.renewablesfirst.org/power-sector) is the one real match — it has exactly this
+//     data ("electricity generation mix... annual and monthly views") with a "Download dataset"
+//     button. But that button generates a CSV client-side from data already loaded into the page;
+//     there's no discoverable stable public URL to fetch it server-side (checked network requests,
+//     the page's own JS bundle, and the embedded Next.js RSC payload — no clean data endpoint).
+//     Revisit if PECI ever exposes a real API.
+// Given no live source is reliably fetchable, this constant is the sole state — updated by a
+// scheduled check (see the weekly routine described in CLAUDE.md) reading the same primary source
+// used to seed it: the Pakistan Economic Survey (Ministry of Finance), which is genuinely
+// authoritative even though it only publishes a few times a year. The schema is written so a real
+// live feed could replace the constant later without changing anything that reads it.
+
+export type EnergyMixCategory = "Thermal" | "Hydel" | "Nuclear" | "Renewable";
+
+export type EnergyMixSegment = {
+  name: EnergyMixCategory;
+  value: number; // MW for capacity, GWh for generation
+  percent: number;
+};
+
+export type EnergyMixSnapshot = {
+  periodLabel: string; // e.g. "Jul-Mar FY2026" — the period the underlying report covers
+  totalCapacityMw: number;
+  totalGenerationGwh: number;
+  capacity: EnergyMixSegment[];
+  generation: EnergyMixSegment[];
+};
+
+export type EnergyMixState = {
+  current: EnergyMixSnapshot;
+  // Previous snapshot, kept so the frontend can detect what changed (e.g. highlight a segment
+  // whose percent moved) rather than just replacing numbers with no transition.
+  previous: EnergyMixSnapshot | null;
+  sourceLabel: string;
+  sourceUrl: string;
+  asOfDate: string; // ISO date the underlying report itself is dated/covers through
+  lastCheckedAt: string; // ISO timestamp of the most recent time a human/agent verified this
+  nextCheckDueAt: string; // lastCheckedAt + 7 days — when the next weekly check should happen
+};
+
+export const PAKISTAN_ENERGY_MIX: EnergyMixState = {
+  current: {
+    periodLabel: "Jul-Mar FY2026",
+    totalCapacityMw: 49651,
+    totalGenerationGwh: 92835,
+    capacity: [
+      { name: "Thermal", value: 24405, percent: 49.2 },
+      { name: "Hydel", value: 11615, percent: 23.4 },
+      { name: "Renewable", value: 10101, percent: 20.3 },
+      { name: "Nuclear", value: 3530, percent: 7.1 },
+    ],
+    generation: [
+      { name: "Thermal", value: 43581, percent: 46.9 },
+      { name: "Hydel", value: 27961, percent: 30.1 },
+      { name: "Nuclear", value: 17133, percent: 18.5 },
+      { name: "Renewable", value: 4160, percent: 4.5 },
+    ],
+  },
+  previous: null,
+  sourceLabel: "Pakistan Economic Survey 2025-26 (Ministry of Finance), Ch.14 Energy",
+  sourceUrl: "https://www.finance.gov.pk/survey/chapter_26/14_energy.pdf",
+  asOfDate: "2026-03-31",
+  lastCheckedAt: "2026-08-03T00:00:00Z",
+  nextCheckDueAt: "2026-08-10T00:00:00Z",
+};
+
 export const MARI_LOGO_URL =
   "https://www.marienergies.com.pk/wp-content/themes/digitz/dist/img/logos/mari-energies.png";
 
@@ -175,7 +252,7 @@ export type BdcUpdate = { date: string; text: string };
 // whenever the team has something new to post. Keep entries short — this scrolls in a
 // single-line marquee.
 export const BDC_TEAM_UPDATES: BdcUpdate[] = [
-  { date: "Aug 03, 2026", text: "BDC Townhall Meeting — Monday, 11:30 AM, Conference Room" },
+  { date: "Aug 04, 2026", text: "BDC Townhall Meeting — Tuesday, 9:30 AM, Conference Room" },
   { date: "Aug 05, 2026", text: "OCM-TCM of Karak Block — 10:00 AM, Conference Room" },
   { date: "Aug 05, 2026", text: "Green Energy — Weekly Meeting Planative, 2:30 PM, HSE Meeting Room" },
   { date: "Aug 06, 2026", text: "Supplemental Agreement with Engro — deadline Friday" },
@@ -219,11 +296,22 @@ export const RECEIVABLES_BY_QUARTER = [
 
 // Pakistan petroleum import volumes, read directly from OCAC's own Import/Export report. Not
 // scraped — updated by hand whenever a newer month's row is published and read.
+// billUsdBn/billYoyChangePercent are the DOLLAR VALUE of the same "petroleum group" import
+// stream, from SBP's own trade data (crude $812.03mn + products $506.86mn + LNG $221.47mn =
+// $1.5404bn, rounds to the $1.55bn SBP reported for Jun 2026) — a distinct figure from OCAC's
+// physical tonnage above (SBP's "petroleum group" also includes LNG value, which OCAC's
+// port-discharge tonnage table does not track at all). Verified 2026-08-03 via a source that
+// explicitly cited SBP as the releasing agency. Update alongside the OCAC figures when a newer
+// month's SBP trade data is read — the two sources don't always publish on the same lag, so it's
+// fine for billUsdBn's period to occasionally trail totalKt's.
 export const OIL_IMPORTS_LAST_MONTH = {
   periodLabel: "Jun 2026",
   totalKt: 1464.6,
   crudeKt: 1032.9,
   source: "OCAC",
+  billUsdBn: 1.55,
+  billYoyChangePercent: 41.25,
+  billSource: "SBP",
 };
 
 // Mari Energies' share of Pakistan's total weekly oil/gas production, from PPIS's Upstream
